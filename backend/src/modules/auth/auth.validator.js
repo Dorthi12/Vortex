@@ -12,7 +12,7 @@ export const registerSchema = z.object({
       "Password must be at least 8 characters and include one uppercase, one lowercase, and one special character",
     ),
   role: z.enum(["USER", "LEADER", "ADMINISTRATOR"]),
-  // dob: z.coerce.date(),
+  dob: z.coerce.date(),
   gender: z.enum(["Male", "Female", "Others", "Prefer not to say"]),
 });
 
