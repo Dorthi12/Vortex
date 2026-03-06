@@ -1,5 +1,8 @@
 import express from "express";
 import { uploadMultiple } from "../../middleware/upload.middleware.js";
+import { validate } from "../../middleware/validate.middleware.js";
+
+import { postSchema } from "./community.validator.js";
 
 import {
   getFeed,
@@ -15,7 +18,12 @@ import {
 
 const router = express.Router();
 
-router.post("/posts", uploadMultiple("media", 5), createPost);
+router.post(
+  "/posts",
+  validate(postSchema),
+  uploadMultiple("media", 5),
+  createPost,
+);
 router.get("/posts/user/:userId", getUserPosts);
 router.get("/feed", getFeed);
 router.post("/posts/:postId/vote", votePost);

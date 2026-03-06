@@ -35,27 +35,37 @@ export const createPost = async (req, res, next) => {
 
 export const getFeed = async (req, res, next) => {
   try {
-    const page = Number(req.query.page) || 1;
+    const { cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
-
-    const skip = (page - 1) * limit;
 
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
-      skip,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
       take: limit,
       include: {
-        author: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            profileImageUrl: true,
+            role: true,
+          },
+        },
         media: true,
-        votes: true,
-        comments: true,
+        _count: {
+          select: {
+            votes: true,
+            comments: true,
+          },
+        },
       },
     });
-
+    const nextCursor = posts.length ? posts[posts.length - 1].id : null;
     res.json({
       success: true,
-      page,
       posts,
+      nextCursor,
     });
   } catch (error) {
     next(error);
@@ -66,24 +76,31 @@ export const getUserPosts = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    const page = Number(req.query.page) || 1;
+    const { cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
 
     const posts = await prisma.post.findMany({
       where: { authorId: userId },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
       take: limit,
       include: {
         media: true,
-        votes: true,
-        comments: true,
+        _count: {
+          select: {
+            votes: true,
+            comments: true,
+          },
+        },
       },
     });
 
+    const nextCursor = posts.length ? posts[posts.length - 1].id : null;
     res.json({
       success: true,
       posts,
+      nextCursor,
     });
   } catch (error) {
     next(error);
@@ -122,23 +139,31 @@ export const votePost = async (req, res, next) => {
 export const getPostVotes = async (req, res, next) => {
   try {
     const { postId } = req.params;
+    const { cursor } = req.query;
+    const limit = Number(req.query.limit) || 10;
 
     const votes = await prisma.vote.findMany({
       where: { postId },
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      take: limit,
       include: {
         user: {
           select: {
             id: true,
             name: true,
             profileImageUrl: true,
+            role: true,
           },
         },
       },
     });
 
+    const nextCursor = votes.length ? votes[votes.length - 1].id : null;
     res.json({
       success: true,
       votes,
+      nextCursor,
     });
   } catch (error) {
     next(error);
@@ -171,31 +196,44 @@ export const createComment = async (req, res, next) => {
 export const getPostComments = async (req, res, next) => {
   try {
     const { postId } = req.params;
+    const { parentId } = req.query;
 
-    const page = Number(req.query.page) || 1;
+    const { cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
 
     const comments = await prisma.comment.findMany({
       where: {
         postId,
-        parentId: null,
+        parentId: parentId ?? null,
       },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
       take: limit,
       include: {
-        author: true,
-        replies: {
-          include: {
-            author: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            profileImageUrl: true,
+            role: true,
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
           },
         },
       },
     });
 
+    const nextCursor = comments.length
+      ? comments[comments.length - 1].id
+      : null;
     res.json({
       success: true,
       comments,
+      nextCursor,
     });
   } catch (error) {
     next(error);
@@ -206,22 +244,33 @@ export const getFollowers = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
+    const { cursor } = req.cursor;
+    const limit = Number(req.query.limit) || 10;
+
     const followers = await prisma.follow.findMany({
       where: { followingId: userId },
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      take: limit,
       include: {
         follower: {
           select: {
             id: true,
             name: true,
             profileImageUrl: true,
+            role: true,
           },
         },
       },
     });
 
+    const nextCursor = followers.length
+      ? followers[followers.length - 1].id
+      : null;
     res.json({
       success: true,
       followers,
+      nextCursor,
     });
   } catch (error) {
     next(error);
@@ -232,22 +281,33 @@ export const getFollowing = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
+    const { cursor } = req.query;
+    const limit = Number(req.query.limit) || 10;
+
     const following = await prisma.follow.findMany({
       where: { followerId: userId },
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      take: limit,
       include: {
         following: {
           select: {
             id: true,
             name: true,
             profileImageUrl: true,
+            role: true,
           },
         },
       },
     });
 
+    const nextCursor = following.length
+      ? following[following.length - 1].id
+      : null;
     res.json({
       success: true,
       following,
+      nextCursor,
     });
   } catch (error) {
     next(error);
