@@ -45,4 +45,84 @@ model User {
   googleId        String?         @unique
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  posts           Post[]
+  votes           Vote[]
+  comments        Comment[]
+}
+
+model Post {
+  id String @id @default(uuid())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  caption      String
+  locationName String?
+  latitude     Float?
+  longitude    Float?
+
+  sentimentScore Float?
+  priorityScore  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media    PostMedia[]
+  votes    Vote[]
+  comments Comment[]
+}
+
+model PostMedia {
+  id String @id @default(uuid())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  url  String
+  type MediaType
+
+  createdAt DateTime @default(now())
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Vote {
+  id String @id @default(uuid())
+
+  postId String
+  userId String
+
+  type VoteType
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
+
+model Comment {
+  id       String @id @default(uuid())
+  postId   String
+  authorId String
+
+  content String
+
+  parentId String?
+
+  post   Post @relation(fields: [postId], references: [id])
+  author User @relation(fields: [authorId], references: [id])
+
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
 }
