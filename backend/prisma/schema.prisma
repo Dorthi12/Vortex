@@ -38,7 +38,7 @@ model User {
   phoneNumber     String?         @unique
   role            Role            @default(USER)
   dateOfBirth     DateTime?
-  profileImageUrl String?
+  profileImageUrl String          @default("https://res.cloudinary.com/djd94qxqr/image/upload/v1772806569/logo_jee7na.png")
   refreshToken    String?
   themePreference ThemePreference @default(DARK)
   authProvider    AuthProvider    @default(LOCAL)
@@ -48,40 +48,34 @@ model User {
   posts           Post[]
   votes           Vote[]
   comments        Comment[]
+  followers       Follow[]        @relation("UserFollowing")
+  following       Follow[]        @relation("UserFollowers")
 }
 
 model Post {
-  id String @id @default(uuid())
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
-
-  caption      String
-  locationName String?
-  latitude     Float?
-  longitude    Float?
-
+  id             String      @id @default(uuid())
+  authorId       String
+  author         User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  caption        String
+  locationName   String?
+  latitude       Float?
+  longitude      Float?
   sentimentScore Float?
   priorityScore  Float?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  media    PostMedia[]
-  votes    Vote[]
-  comments Comment[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  media          PostMedia[]
+  votes          Vote[]
+  comments       Comment[]
 }
 
 model PostMedia {
-  id String @id @default(uuid())
-
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  url  String
-  type MediaType
-
-  createdAt DateTime @default(now())
+  id        String    @id @default(uuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url       String
+  type      MediaType
+  createdAt DateTime  @default(now())
 }
 
 enum MediaType {
@@ -90,16 +84,12 @@ enum MediaType {
 }
 
 model Vote {
-  id String @id @default(uuid())
-
-  postId String
-  userId String
-
-  type VoteType
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
-
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  type      VoteType
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
@@ -111,18 +101,25 @@ enum VoteType {
 }
 
 model Comment {
-  id       String @id @default(uuid())
-  postId   String
-  authorId String
-
-  content String
-
-  parentId String?
-
-  post   Post @relation(fields: [postId], references: [id])
-  author User @relation(fields: [authorId], references: [id])
-
+  id        String    @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies   Comment[] @relation("CommentReplies")
   createdAt DateTime  @default(now())
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id])
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
 }

@@ -6,9 +6,9 @@ import rateLimit from "express-rate-limit";
 import passport from "./config/passport.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
-import { roleMiddleware } from "./middleware/role.middleware.js";
 
 import authRoutes from "./modules/auth/auth.routes.js";
+import communityRoutes from "./modules/community/community.routes.js";
 
 const app = express();
 app.use(passport.initialize());
@@ -46,6 +46,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/community", authMiddleware, communityRoutes);
 
 app.use(errorMiddleware);
 
