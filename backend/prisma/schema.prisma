@@ -24,16 +24,25 @@ enum ThemePreference {
   DARK
 }
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
 model User {
+  id              String          @id @default(uuid())
   name            String
   email           String          @unique
-  password        String
+  password        String?
+  gender          String?         @default("Prefer not to say")
   phoneNumber     String?         @unique
   role            Role            @default(USER)
   dateOfBirth     DateTime?
   profileImageUrl String?
   refreshToken    String?
   themePreference ThemePreference @default(DARK)
+  authProvider    AuthProvider    @default(LOCAL)
+  googleId        String?         @unique
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }

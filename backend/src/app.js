@@ -1,14 +1,17 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 
+import passport from "./config/passport.js";
+import { authMiddleware } from "./middleware/auth.middleware.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
+import { roleMiddleware } from "./middleware/role.middleware.js";
 
-dotenv.config();
+import authRoutes from "./modules/auth/auth.routes.js";
 
 const app = express();
+app.use(passport.initialize());
 
 app.use(
   cors({
@@ -41,6 +44,8 @@ app.get("/health", (req, res) => {
     message: "Server is running",
   });
 });
+
+app.use("/auth", authRoutes);
 
 app.use(errorMiddleware);
 
