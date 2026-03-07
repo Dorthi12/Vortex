@@ -50,32 +50,37 @@ model User {
   comments        Comment[]
   followers       Follow[]        @relation("UserFollowing")
   following       Follow[]        @relation("UserFollowers")
+  issueReports    IssueReport[]   @relation("IssueReporter")
 }
 
 model Post {
-  id             String      @id @default(uuid())
+  id             String       @id @default(uuid())
   authorId       String
-  author         User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   caption        String
   locationName   String?
   latitude       Float?
   longitude      Float?
   sentimentScore Float?
   priorityScore  Float?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  media          PostMedia[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  aiReports      AIAnalysis[]
+  media          Media[]
   votes          Vote[]
   comments       Comment[]
 }
 
-model PostMedia {
-  id        String    @id @default(uuid())
-  postId    String
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  url       String
-  type      MediaType
-  createdAt DateTime  @default(now())
+model Media {
+  id            String       @id @default(uuid())
+  postId        String?
+  post          Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  issueReportId String?
+  issueReport   IssueReport? @relation(fields: [issueReportId], references: [id], onDelete: Cascade)
+  url           String
+  publicId      String
+  type          MediaType
+  createdAt     DateTime     @default(now())
 }
 
 enum MediaType {
@@ -101,16 +106,17 @@ enum VoteType {
 }
 
 model Comment {
-  id        String    @id @default(uuid())
-  postId    String
-  authorId  String
-  content   String
-  parentId  String?
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id])
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies   Comment[] @relation("CommentReplies")
-  createdAt DateTime  @default(now())
+  id         String       @id @default(uuid())
+  postId     String
+  authorId   String
+  content    String
+  parentId   String?
+  post       Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author     User         @relation(fields: [authorId], references: [id])
+  parent     Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[]    @relation("CommentReplies")
+  createdAt  DateTime     @default(now())
+  aianalyses AIAnalysis[]
 }
 
 model Follow {
@@ -122,4 +128,114 @@ model Follow {
   createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])
+}
+
+enum AIContentType {
+  POST
+  ISSUE_REPORT
+  COMMENT
+}
+
+enum AIModelType {
+  SENTIMENT
+  PRIORITY
+  TOXICITY
+  CATEGORY_CLASSIFICATION
+  LANGUAGE_DETECTION
+  DUPLICATE_DETECTION
+  ENTITY_EXTRACTION
+  MISINFORMATION_DETECTION
+}
+
+enum IssueCategory {
+  WATER_SUPPLY
+  ROAD_DAMAGE
+  ELECTRICITY
+  STREET_LIGHTS
+  DRAINAGE_AND_SEWAGE
+  FLOODING
+  GARBAGE_COLLECTION
+  PUBLIC_TOILETS
+  HEALTHCARE
+  EDUCATION
+  PUBLIC_SAFETY
+  PUBLIC_TRANSPORT
+  AIR_POLLUTION
+  WATER_POLLUTION
+  CORRUPTION
+  GOVERNMENT_SCHEMES
+  AGRICULTURE
+  OTHERS
+}
+
+model AIAnalysis {
+  id                String         @id @default(uuid())
+  contentType       AIContentType
+  modelType         AIModelType
+  postId            String?
+  post              Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  issueReportId     String?
+  issueReport       IssueReport?   @relation(fields: [issueReportId], references: [id], onDelete: Cascade)
+  commentId         String?
+  comment           Comment?       @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  sentiments        String[]
+  sentimentScore    Float?
+  priorityScore     Float?
+  toxicityScore     Float?
+  urgencyScore      Float?
+  impactScore       Float?
+  detectedLanguage  String?
+  issueCategory     IssueCategory?
+  issuePriority     IssuePriority?
+  confidence        Float?
+  extractedEntities Json?
+  summary           String?
+  modelName         String?
+  modelVersion      String?
+  processingTimeMs  Int?
+  createdAt         DateTime       @default(now())
+
+  @@index([contentType])
+  @@index([modelType])
+  @@index([postId])
+  @@index([issueReportId])
+}
+
+enum IssueStatus {
+  REPORTED
+  UNDER_REVIEW
+  VERIFIED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  CLOSED
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model IssueReport {
+  id            String        @id @default(uuid())
+  reporterId    String
+  reporter      User          @relation("IssueReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  caption       String
+  description   String?
+  latitude      Float
+  longitude     Float
+  locationName  String?
+  status        IssueStatus   @default(REPORTED)
+  priority      IssuePriority @default(MEDIUM)
+  viewCount     Int           @default(0)
+  isDuplicate   Boolean       @default(false)
+  duplicateOfId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  resolvedAt    DateTime?
+  media         Media[]
+  aiAnalysis    AIAnalysis[]
 }
