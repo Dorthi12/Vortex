@@ -1,5 +1,7 @@
 import express from "express";
 import { uploadMultiple } from "../../middleware/upload.middleware.js";
+import { roleMiddleware } from "../../middleware/role.middleware.js";
+
 import {
   createIssue,
   getNearbyIssues,
@@ -12,7 +14,6 @@ import {
   deleteIssueMedia,
   assignIssue,
   updateIssueStatus,
-  analyzeIssue,
   getIssueAIAnalysis,
   getTopPriorityIssues,
   getTrendingIssues,
@@ -27,12 +28,16 @@ router.get("/nearby", getNearbyIssues);
 router.get("/search", searchIssues);
 router.get("/:issueId", getIssueById);
 router.get("/user/me", getMyIssues);
-router.patch("/:issueId", updateIssue);
+router.put("/:issueId", updateIssue);
 router.delete("/:issueId", deleteIssue);
 router.post("/:issueId/media", upload.array("media", 5), addIssueMedia);
 router.delete("/:issueId/media/:mediaId", deleteIssueMedia);
-router.patch("/:issueId/assign", assignIssue);
-router.patch("/:issueId/status", updateIssueStatus);
+router.put("/:issueId/assign", roleMiddleware("ADMINISTRATOR"), assignIssue);
+router.put(
+  "/:issueId/status",
+  roleMiddleware("ADMINISTRATOR", "LEADER"),
+  updateIssueStatus,
+);
 router.get("/:issueId/ai", getIssueAIAnalysis);
 router.get("/analytics/top-priority", getTopPriorityIssues);
 router.get("/analytics/trending", getTrendingIssues);
