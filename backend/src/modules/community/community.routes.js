@@ -14,6 +14,8 @@ import {
   getPostComments,
   getFollowers,
   getFollowing,
+  followUser,
+  unfollowUser,
 } from "./community.controller.js";
 
 const router = express.Router();
@@ -31,6 +33,8 @@ router.get("/posts/:postId/votes", getPostVotes);
 router.post("/posts/:postId/comments", createComment);
 router.get("/posts/:postId/comments", getPostComments);
 router.get("/users/:userId/followers", getFollowers);
+router.post("/users/:userId/", followUser);
+router.put("/users/:userId", unfollowUser);
 router.get("/users/:userId/following", getFollowing);
 
 export default router;
