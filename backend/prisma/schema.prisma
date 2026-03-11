@@ -42,7 +42,11 @@ model User {
   dateOfBirth     DateTime?
   profileImageUrl String          @default("https://res.cloudinary.com/djd94qxqr/image/upload/v1772806569/logo_jee7na.png")
   refreshToken    String?
-  themePreference ThemePreference @default(DARK)
+  Department      String?
+  City            String?
+  State           String?
+  Position        String?
+  themePreference ThemePreference @default(SYSTEM)
   authProvider    AuthProvider    @default(LOCAL)
   googleId        String?         @unique
   createdAt       DateTime        @default(now())
@@ -53,6 +57,7 @@ model User {
   followers       Follow[]        @relation("UserFollowing")
   following       Follow[]        @relation("UserFollowers")
   issueReports    IssueReport[]   @relation("IssueReporter")
+  assignedIssues  IssueReport[]   @relation("Assignee")
 }
 
 model Post {
@@ -240,4 +245,6 @@ model IssueReport {
   resolvedAt    DateTime?
   media         Media[]
   aiAnalysis    AIAnalysis[]
+  assignedToId  String?
+  assignedTo    User?         @relation("Assignee", fields: [assignedToId], references: [id])
 }

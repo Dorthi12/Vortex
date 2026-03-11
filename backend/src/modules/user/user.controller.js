@@ -18,6 +18,8 @@ export const getUserInfo = async (req, res, next) => {
         profileImageUrl: true,
         themePreference: true,
         authProvider: true,
+        city: true,
+        state: true,
         _count: {
           select: {
             followers: true,
@@ -46,6 +48,8 @@ export const getUserInfo = async (req, res, next) => {
       profileImageUrl: user.profileImageUrl,
       themePreference: user.themePreference,
       authProvider: user.authProvider,
+      city: user.city,
+      state: user.state,
       followerCount: user._count.followers,
       followingCount: user._count.following,
       issueReportsCount: user._count.issueReports,
@@ -71,6 +75,8 @@ export const updateUserInfo = async (req, res, next) => {
       "dateOfBirth",
       "profileImageUrl",
       "themePreference",
+      "city",
+      "state",
     ];
 
     const updateData = {};
@@ -104,6 +110,8 @@ export const updateUserInfo = async (req, res, next) => {
         profileImageUrl: true,
         themePreference: true,
         authProvider: true,
+        city: true,
+        state: true,
       },
     });
     const response = {
@@ -117,6 +125,8 @@ export const updateUserInfo = async (req, res, next) => {
       profileImageUrl: updatedUser.profileImageUrl,
       themePreference: updatedUser.themePreference,
       authProvider: updatedUser.authProvider,
+      city: updatedUser.city,
+      state: updatedUser.state,
     };
     return res.status(200).json({
       success: true,
@@ -127,7 +137,6 @@ export const updateUserInfo = async (req, res, next) => {
     next(error);
   }
 };
-import prisma from "../../generated/client.js";
 
 export const deleteUser = async (req, res, next) => {
   try {
@@ -153,6 +162,93 @@ export const deleteUser = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "User account deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchUsers = async (req, res, next) => {
+  try {
+    const { q, role, department, city, state, cursor } = req.query;
+    const limit = Number(req.query.limit) || 10;
+
+    const filters = [];
+
+    if (q) {
+      filters.push({
+        OR: [
+          {
+            name: {
+              contains: q,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: q,
+              mode: "insensitive",
+            },
+          },
+          {
+            phoneNumber: {
+              contains: q,
+              mode: "insensitive",
+            },
+          },
+        ],
+      });
+    }
+
+    if (role) {
+      filters.push({
+        role: role,
+      });
+    }
+    if (department) {
+      filters.push({
+        department: department,
+      });
+    }
+    if (city) {
+      filters.push({
+        city: city,
+      });
+    }
+    if (state) {
+      filters.push({
+        state: state,
+      });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        AND: filters,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        city: true,
+        state: true,
+        profileImageUrl: true,
+      },
+    });
+
+    const nextCursor = users.length ? users[users.length - 1].id : null;
+
+    res.json({
+      success: true,
+      users,
+      nextCursor,
     });
   } catch (error) {
     next(error);
