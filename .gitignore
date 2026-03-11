@@ -1,0 +1,7 @@
+*.env
+*/node_modules/
+*/test/
+*/generated/prisma
+backend/src/generated/
+*.pem
+backend.tar.gz
