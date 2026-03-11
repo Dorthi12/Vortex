@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+*.pth
+*.pt
+*.hdf5
+*.zip
+.env
+
+# Data folders
+src/social_media_analysis/data/raw data/
+src/social_media_analysis/data/dataset/
+src/social_media_analysis/data/image_splits/
+src/social_media_analysis/data/text_splits/
+src/social_media_analysis/data/training_data.csv
+
+# Models
+src/social_media_analysis/models/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.webp
