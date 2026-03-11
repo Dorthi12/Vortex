@@ -16,7 +16,15 @@ const cookieOptions = {
 
 export const register = async (req, res, next) => {
   try {
-    const { email, password, role, dob, gender, name } = req.body;
+    const {
+      email,
+      password,
+      role,
+      dob,
+      gender,
+      name,
+      loggedIn = false,
+    } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -49,10 +57,11 @@ export const register = async (req, res, next) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
+    if (loggedIn)
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
 
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
@@ -70,7 +79,7 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, loggedIn = false } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -98,10 +107,11 @@ export const login = async (req, res, next) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
+    if (loggedIn)
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
 
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
@@ -159,6 +169,13 @@ export const forgotPassword = async (req, res) => {
   });
 };
 
+export const resetPassword = async (req, res, next) => {
+  try {
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const oAuthSuccess = async (req, res) => {
   try {
     const user = req.user;
@@ -180,11 +197,7 @@ export const oAuthSuccess = async (req, res) => {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
-    res.json({
-      message: "Google login successful",
-      accessToken,
-    });
+    res.redirect(`${process.env.FRONTEND_URL}?accessToken=${accessToken}`);
   } catch (error) {
     res.status(500).json({
       message: "OAuth authentication failed",

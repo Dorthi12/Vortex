@@ -17,11 +17,13 @@ enum Role {
   USER
   LEADER
   ADMINISTRATOR
+  REPRESENTATIVE
 }
 
 enum ThemePreference {
   LIGHT
   DARK
+  SYSTEM
 }
 
 enum AuthProvider {
@@ -94,7 +96,7 @@ model Vote {
   userId    String
   type      VoteType
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
@@ -113,7 +115,7 @@ model Comment {
   parentId   String?
   post       Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
   author     User         @relation(fields: [authorId], references: [id])
-  parent     Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+  parent     Comment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies    Comment[]    @relation("CommentReplies")
   createdAt  DateTime     @default(now())
   aianalyses AIAnalysis[]
@@ -123,8 +125,8 @@ model Follow {
   id          String   @id @default(uuid())
   followerId  String
   followingId String
-  follower    User     @relation("UserFollowers", fields: [followerId], references: [id])
-  following   User     @relation("UserFollowing", fields: [followingId], references: [id])
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])

@@ -1,6 +1,9 @@
-import { ethers } from "ethers";
-import dotenv from "dotenv";
-dotenv.config();
-const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
-const wallet = new ethers.Wallet(process.env.ALCHEMY_PRIVATE_KEY, provider);
-export { provider, wallet };
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const client = createPublicClient({
+  chain: mainnet,
+  transport: http(process.env.ALCHEMY_RPC_URL),
+});
+
+export default client;

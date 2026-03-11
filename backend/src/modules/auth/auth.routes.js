@@ -5,6 +5,7 @@ import {
   login,
   refreshAccessToken,
   forgotPassword,
+  resetPassword,
   oAuthSuccess,
 } from "./auth.controller.js";
 import { registerSchema, loginSchema } from "./auth.validator.js";
@@ -16,6 +17,7 @@ router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
 router.post("/refresh", refreshAccessToken);
 router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] }),

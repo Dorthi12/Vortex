@@ -10,6 +10,7 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import communityRoutes from "./modules/community/community.routes.js";
 import issueRoutes from "./modules/issues/issue.routes.js";
+import userRoutes from "./modules/user/user.routes.js";
 
 const app = express();
 app.use(passport.initialize());
@@ -49,6 +50,7 @@ app.get("/health", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/community", authMiddleware, communityRoutes);
 app.use("/issue", authMiddleware, issueRoutes);
+app.use("/users", authMiddleware, userRoutes);
 
 app.use(errorMiddleware);
 

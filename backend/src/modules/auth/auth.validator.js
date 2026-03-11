@@ -11,7 +11,7 @@ export const registerSchema = z.object({
       passwordRegex,
       "Password must be at least 8 characters and include one uppercase, one lowercase, and one special character",
     ),
-  role: z.enum(["USER", "LEADER", "ADMINISTRATOR"]),
+  role: z.enum(["USER", "LEADER", "ADMINISTRATOR", "REPRESENTATIVE"]),
   dob: z.coerce.date(),
   gender: z.enum(["Male", "Female", "Others", "Prefer not to say"]),
 });
