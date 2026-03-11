@@ -16,14 +16,15 @@ import {
   getFollowing,
   followUser,
   unfollowUser,
+  getSentimentAnalysis,
 } from "./community.controller.js";
 
 const router = express.Router();
 
 router.post(
   "/posts",
-  validate(postSchema),
   uploadMultiple("media", 5),
+  validate(postSchema),
   createPost,
 );
 router.get("/posts/user/:userId", getUserPosts);
@@ -32,6 +33,7 @@ router.post("/posts/:postId/vote", votePost);
 router.get("/posts/:postId/votes", getPostVotes);
 router.post("/posts/:postId/comments", createComment);
 router.get("/posts/:postId/comments", getPostComments);
+router.get("/sentiment/:postId", getSentimentAnalysis);
 router.get("/users/:userId/followers", getFollowers);
 router.post("/users/:userId/", followUser);
 router.put("/users/:userId", unfollowUser);

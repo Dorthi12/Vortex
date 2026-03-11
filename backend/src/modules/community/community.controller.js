@@ -1,4 +1,5 @@
 import prisma from "../../config/db.js";
+import { sendKafkaMessage } from "../../utils/kafka.utils.js";
 
 export const createPost = async (req, res, next) => {
   try {
@@ -13,17 +14,30 @@ export const createPost = async (req, res, next) => {
         authorId: req.user.id,
       },
     });
+    let imageUrls = [];
 
     if (req.filesData && req.filesData.length > 0) {
-      await prisma.postMedia.createMany({
+      await prisma.media.createMany({
         data: req.filesData.map((file) => ({
           postId: post.id,
           url: file.url,
+          publicId: file.publicId,
           type: file.type,
         })),
       });
-    }
 
+      imageUrls = req.filesData.map((file) => file.url);
+    }
+    const kafkaPayload = {
+      postId: post.id,
+      userId: req.user.id,
+      caption: post.caption,
+      locationName: post.locationName,
+      latitude: post.latitude,
+      longitude: post.longitude,
+      images: imageUrls,
+    };
+    await sendKafkaMessage("post-created", kafkaPayload);
     res.status(201).json({
       success: true,
       post,
@@ -389,6 +403,12 @@ export const unfollowUser = async (req, res, next) => {
       success: true,
       message: "User unfollowed successfully",
     });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getSentimentAnalysis = async (req, res, next) => {
+  try {
   } catch (error) {
     next(error);
   }

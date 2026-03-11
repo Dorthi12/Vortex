@@ -61,21 +61,47 @@ model User {
 }
 
 model Post {
-  id             String       @id @default(uuid())
-  authorId       String
-  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  caption        String
-  locationName   String?
-  latitude       Float?
-  longitude      Float?
-  sentimentScore Float?
-  priorityScore  Float?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  aiReports      AIAnalysis[]
-  media          Media[]
-  votes          Vote[]
-  comments       Comment[]
+  id                String              @id @default(uuid())
+  authorId          String
+  author            User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  caption           String
+  locationName      String?
+  latitude          Float?
+  longitude         Float?
+  sentimentScore    Float?
+  priorityScore     Float?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  sentimentAnalysis SentimentAnalysis[]
+  media             Media[]
+  votes             Vote[]
+  comments          Comment[]
+  aianalyses        AIAnalysis[]
+}
+
+model SentimentAnalysis {
+  id                   String         @id @default(uuid())
+  postId               String
+  post                 Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  text                 String?
+  finalIssue           IssueCategory?
+  confidence           Float?
+  decidedBy            String?
+  sentimentLabel       String?
+  sentimentScore       Float?
+  priorityScore        Float?
+  wardNumber           String?
+  assignedToDepartment String?
+  locations            Json?
+  textAnalysis         Json?
+  imageAnalysis        Json?
+  processedAt          DateTime?
+  nlpProcessed         Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+
+  @@index([postId])
+  @@index([finalIssue])
+  @@index([priorityScore])
 }
 
 model Media {
