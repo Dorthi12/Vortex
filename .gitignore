@@ -5,3 +5,4 @@
 backend/src/generated/
 *.pem
 backend.tar.gz
+.vscode/
