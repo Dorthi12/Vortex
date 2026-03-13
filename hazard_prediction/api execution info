@@ -1,0 +1,12 @@
+how to implement it hazard prediction master dataset api
+
+import requests
+import pandas as pd
+
+url = "https://notour-toploftily-carrie.ngrok-free.dev/dataset/sample"
+
+data = requests.get(url).json()
+
+df = pd.DataFrame(data)
+
+print(df.head())

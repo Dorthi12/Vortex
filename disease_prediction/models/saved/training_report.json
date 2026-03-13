@@ -1,0 +1,16 @@
+{
+  "trained_at": "2026-03-12T10:25:14.345062",
+  "symptom_classifier": {
+    "rf_accuracy": 0.9577,
+    "gb_accuracy": 0.9537,
+    "ensemble_accuracy": 0.9561,
+    "n_classes": 41,
+    "n_symptoms": 101,
+    "n_train": 9840,
+    "n_test": 2460
+  },
+  "model_files": {
+    "symptom_classifier": "models/saved/symptom_classifier.pkl",
+    "label_encoder": "models/saved/label_encoder.pkl"
+  }
+}

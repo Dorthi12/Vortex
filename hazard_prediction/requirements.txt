@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────
+# NETRAVAAH v5 — hazard_prediction requirements
+# Updated for FastAPI rewrite (hazard_api.py replaces Flask app.py)
+# ─────────────────────────────────────────────────────────────────
+
+# ── Web framework (Flask removed; FastAPI + ASGI server added) ───
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0          # ASGI server (replaces Flask dev server)
+python-multipart>=0.0.9            # required by FastAPI for form/file parsing
+
+# ── Data validation (FastAPI dependency) ─────────────────────────
+pydantic>=2.7.0
+
+# ── HTTP client (data_fetcher, response_engine) ──────────────────
+requests>=2.31.0
+
+# ── Numerical / ML ───────────────────────────────────────────────
+numpy>=1.26.0
+pandas>=2.1.0
+scikit-learn>=1.4.0                # RandomForest, ExtraTrees, GradientBoosting,
+                                   # RobustScaler, SimpleImputer, train_test_split,
+                                   # roc_auc_score, f1_score
+scipy>=1.12.0                      # used in train.py statistical utilities
+
+# ── Environment / secrets ────────────────────────────────────────
+python-dotenv>=1.0.0               # loads .env (API keys)
+
+# ─────────────────────────────────────────────────────────────────
+# NOT included (were never used by this project):
+#   flask        — replaced by FastAPI
+#   xgboost      — no XGBClassifier/Regressor in hazard_prediction
+#   torch        — no neural nets in hazard_prediction
+#   torchvision  — no image models in hazard_prediction
+#   Pillow       — no image processing in hazard_prediction
+#   joblib       — models loaded via pickle, not joblib
+#   matplotlib   — no plotting in hazard_prediction runtime code
+#   seaborn      — not used anywhere in hazard_prediction
+# ─────────────────────────────────────────────────────────────────
