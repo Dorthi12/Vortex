@@ -1,11 +1,15 @@
 import prisma from "../../config/db.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import crypto from "crypto";
+import path from "path";
+import s3Client from "../../config/s3.js";
 
 export const getUserInfo = async (req, res, next) => {
   try {
-    const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: {
-        id: userId,
+        id: req.user.id,
       },
       select: {
         id: true,
@@ -15,18 +19,13 @@ export const getUserInfo = async (req, res, next) => {
         phoneNumber: true,
         role: true,
         dateOfBirth: true,
-        profileImageUrl: true,
-        themePreference: true,
-        authProvider: true,
+        awsS3ObjectKey: true,
+        Department: true,
         city: true,
         state: true,
-        _count: {
-          select: {
-            followers: true,
-            following: true,
-            issueReports: true,
-          },
-        },
+        position: true,
+        themePreference: true,
+        createdAt: true,
       },
     });
 
@@ -37,27 +36,58 @@ export const getUserInfo = async (req, res, next) => {
       });
     }
 
-    const response = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      gender: user.gender,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      dateOfBirth: user.dateOfBirth,
-      profileImageUrl: user.profileImageUrl,
-      themePreference: user.themePreference,
-      authProvider: user.authProvider,
-      city: user.city,
-      state: user.state,
-      followerCount: user._count.followers,
-      followingCount: user._count.following,
-      issueReportsCount: user._count.issueReports,
-    };
+    const profileImageUrl = `${process.env.AWS_S3_BASE_URL}/${user.awsS3ObjectKey}`;
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      data: response,
+      user: {
+        ...user,
+        profileImageUrl,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateUploadUrl = async (req, res, next) => {
+  try {
+    const { fileName, fileType } = req.body;
+
+    if (!fileName || !fileType) {
+      return res.status(400).json({
+        success: false,
+        message: "fileName and fileType are required",
+      });
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "video/mp4"];
+
+    if (!allowedTypes.includes(fileType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Unsupported file type",
+      });
+    }
+
+    const extension = path.extname(fileName);
+
+    const key = `uploads/${crypto.randomUUID()}${extension}`;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: key,
+      ContentType: fileType,
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 300,
+    });
+
+    res.json({
+      success: true,
+      key,
+      uploadUrl,
     });
   } catch (error) {
     next(error);
@@ -73,7 +103,6 @@ export const updateUserInfo = async (req, res, next) => {
       "gender",
       "phoneNumber",
       "dateOfBirth",
-      "profileImageUrl",
       "themePreference",
       "city",
       "state",
@@ -87,6 +116,10 @@ export const updateUserInfo = async (req, res, next) => {
       }
     }
 
+    if (req.body.key) {
+      updateData.awsS3ObjectKey = req.body.key;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
         success: false,
@@ -95,9 +128,7 @@ export const updateUserInfo = async (req, res, next) => {
     }
 
     const updatedUser = await prisma.user.update({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       data: updateData,
       select: {
         id: true,
@@ -107,27 +138,19 @@ export const updateUserInfo = async (req, res, next) => {
         phoneNumber: true,
         role: true,
         dateOfBirth: true,
-        profileImageUrl: true,
+        awsS3ObjectKey: true,
         themePreference: true,
         authProvider: true,
         city: true,
         state: true,
       },
     });
+
     const response = {
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      gender: updatedUser.gender,
-      phoneNumber: updatedUser.phoneNumber,
-      role: updatedUser.role,
-      dateOfBirth: updatedUser.dateOfBirth,
-      profileImageUrl: updatedUser.profileImageUrl,
-      themePreference: updatedUser.themePreference,
-      authProvider: updatedUser.authProvider,
-      city: updatedUser.city,
-      state: updatedUser.state,
+      ...updatedUser,
+      profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${updatedUser.awsS3ObjectKey}`,
     };
+
     return res.status(200).json({
       success: true,
       message: "User profile updated successfully",
@@ -201,24 +224,19 @@ export const searchUsers = async (req, res, next) => {
     }
 
     if (role) {
-      filters.push({
-        role: role,
-      });
+      filters.push({ role });
     }
+
     if (department) {
-      filters.push({
-        department: department,
-      });
+      filters.push({ department });
     }
+
     if (city) {
-      filters.push({
-        city: city,
-      });
+      filters.push({ city });
     }
+
     if (state) {
-      filters.push({
-        state: state,
-      });
+      filters.push({ state });
     }
 
     const users = await prisma.user.findMany({
@@ -239,15 +257,20 @@ export const searchUsers = async (req, res, next) => {
         department: true,
         city: true,
         state: true,
-        profileImageUrl: true,
+        awsS3ObjectKey: true,
       },
     });
+
+    const usersWithUrls = users.map((user) => ({
+      ...user,
+      profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${user.awsS3ObjectKey}`,
+    }));
 
     const nextCursor = users.length ? users[users.length - 1].id : null;
 
     res.json({
       success: true,
-      users,
+      users: usersWithUrls,
       nextCursor,
     });
   } catch (error) {

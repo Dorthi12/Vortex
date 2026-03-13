@@ -1,9 +1,60 @@
 import prisma from "../../config/db.js";
 import { sendKafkaMessage } from "../../utils/kafka.utils.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import crypto from "crypto";
+import path from "path";
+import s3Client from "../../config/s3.js";
+
+export const generateUploadUrls = async (req, res, next) => {
+  try {
+    const { files } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({
+        message: "Files array required",
+      });
+    }
+    const allowedTypes = ["image/png", "image/jpeg", "video/mp4"];
+
+    const results = [];
+    for (const file of files) {
+      if (!allowedTypes.includes(file.fileType)) {
+        return res.status(400).json({
+          success: false,
+          message: "Unsupported file type",
+        });
+      }
+      const extension = path.extname(file.fileName);
+      const key = `posts/${crypto.randomUUID()}${extension}`;
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+        ContentType: file.fileType,
+      });
+
+      const uploadUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 300,
+      });
+
+      results.push({
+        key,
+        uploadUrl,
+      });
+    }
+
+    res.json({
+      success: true,
+      files: results,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const createPost = async (req, res, next) => {
   try {
-    const { caption, locationName, latitude, longitude } = req.body;
+    const { caption, locationName, latitude, longitude, mediaKeys } = req.body;
 
     const post = await prisma.post.create({
       data: {
@@ -12,22 +63,26 @@ export const createPost = async (req, res, next) => {
         latitude: latitude ? Number(latitude) : null,
         longitude: longitude ? Number(longitude) : null,
         authorId: req.user.id,
+
+        media:
+          mediaKeys && mediaKeys.length > 0
+            ? {
+                create: mediaKeys.map((key) => ({
+                  awsS3ObjectKey: key,
+                  publicId: key,
+                  type:
+                    key.endsWith(".mp4") || key.endsWith(".webm")
+                      ? "VIDEO"
+                      : "IMAGE",
+                })),
+              }
+            : undefined,
+      },
+      include: {
+        media: true,
       },
     });
-    let imageUrls = [];
 
-    if (req.filesData && req.filesData.length > 0) {
-      await prisma.media.createMany({
-        data: req.filesData.map((file) => ({
-          postId: post.id,
-          url: file.url,
-          publicId: file.publicId,
-          type: file.type,
-        })),
-      });
-
-      imageUrls = req.filesData.map((file) => file.url);
-    }
     const kafkaPayload = {
       postId: post.id,
       userId: req.user.id,
@@ -35,12 +90,22 @@ export const createPost = async (req, res, next) => {
       locationName: post.locationName,
       latitude: post.latitude,
       longitude: post.longitude,
-      images: imageUrls,
+      mediaKeys: mediaKeys || [],
     };
+
     await sendKafkaMessage("post-created", kafkaPayload);
+
+    const mediaWithUrls = post.media.map((media) => ({
+      ...media,
+      url: `${process.env.AWS_S3_BASE_URL}/${media.awsS3ObjectKey}`,
+    }));
+
     res.status(201).json({
       success: true,
-      post,
+      post: {
+        ...post,
+        media: mediaWithUrls,
+      },
     });
   } catch (error) {
     next(error);
@@ -62,8 +127,8 @@ export const getFeed = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            profileImageUrl: true,
             role: true,
+            awsS3ObjectKey: true,
           },
         },
         media: true,
@@ -75,10 +140,26 @@ export const getFeed = async (req, res, next) => {
         },
       },
     });
+
+    const postsWithUrls = posts.map((post) => ({
+      ...post,
+
+      author: {
+        ...post.author,
+        profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${post.author.awsS3ObjectKey}`,
+      },
+
+      media: post.media.map((m) => ({
+        ...m,
+        url: `${process.env.AWS_S3_BASE_URL}/${m.awsS3ObjectKey}`,
+      })),
+    }));
+
     const nextCursor = posts.length ? posts[posts.length - 1].id : null;
+
     res.json({
       success: true,
-      posts,
+      posts: postsWithUrls,
       nextCursor,
     });
   } catch (error) {
@@ -89,7 +170,6 @@ export const getFeed = async (req, res, next) => {
 export const getUserPosts = async (req, res, next) => {
   try {
     const { userId } = req.params;
-
     const { cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
 
@@ -110,10 +190,19 @@ export const getUserPosts = async (req, res, next) => {
       },
     });
 
+    const postsWithUrls = posts.map((post) => ({
+      ...post,
+      media: post.media.map((m) => ({
+        ...m,
+        url: `${process.env.AWS_S3_BASE_URL}/${m.awsS3ObjectKey}`,
+      })),
+    }));
+
     const nextCursor = posts.length ? posts[posts.length - 1].id : null;
+
     res.json({
       success: true,
-      posts,
+      posts: postsWithUrls,
       nextCursor,
     });
   } catch (error) {
@@ -166,17 +255,26 @@ export const getPostVotes = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            profileImageUrl: true,
             role: true,
+            awsS3ObjectKey: true,
           },
         },
       },
     });
 
+    const votesWithUrls = votes.map((vote) => ({
+      ...vote,
+      user: {
+        ...vote.user,
+        profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${vote.user.awsS3ObjectKey}`,
+      },
+    }));
+
     const nextCursor = votes.length ? votes[votes.length - 1].id : null;
+
     res.json({
       success: true,
-      votes,
+      votes: votesWithUrls,
       nextCursor,
     });
   } catch (error) {
@@ -210,9 +308,7 @@ export const createComment = async (req, res, next) => {
 export const getPostComments = async (req, res, next) => {
   try {
     const { postId } = req.params;
-    const { parentId } = req.query;
-
-    const { cursor } = req.query;
+    const { parentId, cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
 
     const comments = await prisma.comment.findMany({
@@ -229,8 +325,8 @@ export const getPostComments = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            profileImageUrl: true,
             role: true,
+            awsS3ObjectKey: true,
           },
         },
         _count: {
@@ -241,12 +337,21 @@ export const getPostComments = async (req, res, next) => {
       },
     });
 
+    const commentsWithUrls = comments.map((comment) => ({
+      ...comment,
+      author: {
+        ...comment.author,
+        profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${comment.author.awsS3ObjectKey}`,
+      },
+    }));
+
     const nextCursor = comments.length
       ? comments[comments.length - 1].id
       : null;
+
     res.json({
       success: true,
-      comments,
+      comments: commentsWithUrls,
       nextCursor,
     });
   } catch (error) {
@@ -257,8 +362,7 @@ export const getPostComments = async (req, res, next) => {
 export const getFollowers = async (req, res, next) => {
   try {
     const { userId } = req.params;
-
-    const { cursor } = req.cursor;
+    const { cursor } = req.query;
     const limit = Number(req.query.limit) || 10;
 
     const followers = await prisma.follow.findMany({
@@ -271,19 +375,28 @@ export const getFollowers = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            profileImageUrl: true,
             role: true,
+            awsS3ObjectKey: true,
           },
         },
       },
     });
 
+    const followersWithUrls = followers.map((f) => ({
+      ...f,
+      follower: {
+        ...f.follower,
+        profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${f.follower.awsS3ObjectKey}`,
+      },
+    }));
+
     const nextCursor = followers.length
       ? followers[followers.length - 1].id
       : null;
+
     res.json({
       success: true,
-      followers,
+      followers: followersWithUrls,
       nextCursor,
     });
   } catch (error) {
@@ -308,25 +421,35 @@ export const getFollowing = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            profileImageUrl: true,
             role: true,
+            awsS3ObjectKey: true,
           },
         },
       },
     });
 
+    const followingWithUrls = following.map((f) => ({
+      ...f,
+      following: {
+        ...f.following,
+        profileImageUrl: `${process.env.AWS_S3_BASE_URL}/${f.following.awsS3ObjectKey}`,
+      },
+    }));
+
     const nextCursor = following.length
       ? following[following.length - 1].id
       : null;
+
     res.json({
       success: true,
-      following,
+      following: followingWithUrls,
       nextCursor,
     });
   } catch (error) {
     next(error);
   }
 };
+
 export const followUser = async (req, res, next) => {
   try {
     const { userId } = req.params;

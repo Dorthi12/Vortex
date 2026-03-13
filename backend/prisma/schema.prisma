@@ -40,11 +40,11 @@ model User {
   phoneNumber     String?         @unique
   role            Role            @default(USER)
   dateOfBirth     DateTime?
-  profileImageUrl String          @default("https://res.cloudinary.com/djd94qxqr/image/upload/v1772806569/logo_jee7na.png")
+  awsS3ObjectKey  String          @default("profile/logo.png")
   refreshToken    String?
-  Department      String?
-  City            String?
-  State           String?
+  department      String?
+  city            String?
+  state           String?
   Position        String?
   themePreference ThemePreference @default(SYSTEM)
   authProvider    AuthProvider    @default(LOCAL)
@@ -105,15 +105,15 @@ model SentimentAnalysis {
 }
 
 model Media {
-  id            String       @id @default(uuid())
-  postId        String?
-  post          Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
-  issueReportId String?
-  issueReport   IssueReport? @relation(fields: [issueReportId], references: [id], onDelete: Cascade)
-  url           String
-  publicId      String
-  type          MediaType
-  createdAt     DateTime     @default(now())
+  id             String       @id @default(uuid())
+  postId         String?
+  post           Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  issueReportId  String?
+  issueReport    IssueReport? @relation(fields: [issueReportId], references: [id], onDelete: Cascade)
+  awsS3ObjectKey String?
+  publicId       String
+  type           MediaType
+  createdAt      DateTime     @default(now())
 }
 
 enum MediaType {

@@ -1,5 +1,4 @@
 import express from "express";
-import { uploadMultiple } from "../../middleware/upload.middleware.js";
 import { roleMiddleware } from "../../middleware/role.middleware.js";
 
 // import {
