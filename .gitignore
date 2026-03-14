@@ -23,3 +23,5 @@ src/social_media_analysis/models/
 *.png
 *.bmp
 *.webp
+
+git rm -r --cached src/social_media_analysis/resource_monitor/
