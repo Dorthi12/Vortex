@@ -1,0 +1,57 @@
+# ─────────────────────────────────────────────────────────────────
+# agro_dept — requirements
+# Covers prediction_api.py (FastAPI) + all 6 model scripts
+# ─────────────────────────────────────────────────────────────────
+
+# ── Web framework ─────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0          # ASGI server
+python-multipart>=0.0.9            # FastAPI form/file parsing
+
+# ── Data validation (FastAPI dependency) ─────────────────────────
+pydantic>=2.7.0
+
+# ── HTTP client (Gemini API, Open-Meteo, OpenWeatherMap, etc.) ───
+requests>=2.31.0
+
+# ── Numerical / ML core ──────────────────────────────────────────
+numpy>=1.26.0
+pandas>=2.1.0
+scikit-learn>=1.4.0                # RandomForest, GradientBoosting,
+                                   # HistGradientBoostingRegressor,
+                                   # StandardScaler, KFold, StratifiedKFold,
+                                   # CalibratedClassifierCV, train_test_split,
+                                   # all scoring metrics (roc_auc, f1, r2, mae…)
+joblib>=1.4.0                      # model persistence (joblib.dump / joblib.load)
+                                   # used in all 6 model scripts + prediction_api.py
+
+# ── Gradient boosting (Model 5 crop suitability, Model 6 risk) ───
+xgboost>=2.0.0                     # XGBClassifier used in model5, model6
+
+# ── Deep learning (Model 3 disease detection CNN) ────────────────
+torch>=2.2.0
+torchvision>=0.17.0                # ImageFolder, transforms (model3_disease_detection)
+
+# ── Image processing (Model 3 Gemini vision input) ───────────────
+Pillow>=10.3.0                     # PIL.Image.open used in model3_disease_detection
+
+# ── Plotting (model training diagnostics, feature importance) ────
+matplotlib>=3.8.0                  # used in model2_stress_detection training plots
+seaborn>=0.13.0                    # used in training visualisations
+
+# ── Environment / secrets ────────────────────────────────────────
+python-dotenv>=1.0.0               # optional — for loading .env API keys
+
+# ─────────────────────────────────────────────────────────────────
+# Runtime-only note:
+#   matplotlib and seaborn are only used during model training
+#   (run_all_models.py / model scripts), not by prediction_api.py.
+#   If you are deploying only the API server (no training), you can
+#   remove matplotlib and seaborn from the production image and keep
+#   them only in a dev/training requirements layer.
+#
+#   torch + torchvision are only needed if model3_disease_detection
+#   is trained or used for CNN inference. The Gemini-only path in
+#   prediction_api.py (/predict/disease) works without them at
+#   runtime if the CNN model file is absent (graceful fallback).
+# ─────────────────────────────────────────────────────────────────

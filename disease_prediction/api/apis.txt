@@ -1,0 +1,85 @@
+# ============================================================
+# Disease Intelligence System — API Reference
+# Base URL: http://localhost:8000
+# Docs:     http://localhost:8000/docs
+# ============================================================
+
+# ── HEALTH ──────────────────────────────────────────────────
+GET  /                          System info & status
+GET  /health                    Health check + Kafka topic stats
+
+# ── STEP 1: CITIZEN REPORT ──────────────────────────────────
+POST /api/v1/citizen/report
+  Body: { "text": "...", "district": "Lucknow", "lat": 26.85, "lng": 80.95 }
+  → Publishes to Kafka:citizen_reports, extracts symptoms, quick prediction
+
+# ── STEP 2: SYMPTOM DETECTION ───────────────────────────────
+POST /api/v1/symptoms/extract?text=...
+  → Extracted symptoms + binary feature vector
+
+GET  /api/v1/symptoms/list
+  → All 101 recognised symptom strings
+
+# ── STEP 3: DISEASE PREDICTION ──────────────────────────────
+POST /api/v1/disease/predict
+  Body: { "symptoms": ["fever","headache","joint_pain"], "top_k": 5 }
+  → RF+GBM ensemble predictions with confidence scores (95.8% accuracy)
+
+POST /api/v1/disease/predict-from-text?text=...
+  → End-to-end: text → symptoms → predictions
+
+# ── STEP 4: CASE AGGREGATION ────────────────────────────────
+POST /api/v1/cases/ingest
+  Body: { "district": "Lucknow", "disease": "Dengue", "cases": 25, "deaths": 1 }
+  → Ingests into case store + Kafka:disease_cases
+
+GET  /api/v1/cases/summary/{disease}
+  → District-level case summary table
+
+# ── STEP 5: OUTBREAK FORECAST ───────────────────────────────
+POST /api/v1/forecast
+  Body: { "district": "Lucknow", "disease": "Dengue", "cases": 25 }
+  → risk_level, outbreak_probability, projected_cases, weather, R0
+
+GET  /api/v1/forecast/all/{disease}
+  → Ranked forecast for all 15 UP districts
+
+# ── STEP 6: HOTSPOT DETECTION ───────────────────────────────
+GET  /api/v1/hotspots/{disease}?min_cases=5
+  → DBSCAN clusters + heatmap data
+
+# ── STEP 7: RISK SCORING + HOSPITAL LOAD ────────────────────
+POST /api/v1/risk/score?district=Lucknow&disease=Dengue&cases=25
+  → Composite risk score, hospital load, SEIR peak
+
+# ── STEP 8+9: REMEDY + EXECUTION PLAN ───────────────────────
+POST /api/v1/remedy/plan?district=Lucknow&disease=Dengue&cases=25
+  → Gemini AI remedies + Government execution plan
+  → Publishes to Kafka:government_actions
+
+# ── FULL PIPELINE ────────────────────────────────────────────
+POST /api/v1/pipeline/full
+  Body: {
+    "district": "Lucknow",
+    "text": "High fever 3 days, joint pain, rash on arms",
+    "cases": 25
+  }
+  → All 9 steps in one call
+
+# ── REFERENCE DATA ───────────────────────────────────────────
+GET  /api/v1/districts           All UP districts with coordinates
+GET  /api/v1/diseases            All 41 disease names
+GET  /api/v1/weather/{district}  Live weather for district
+
+# ── WEATHER APIs USED ────────────────────────────────────────
+Open-Meteo:     https://api.open-meteo.com/v1/forecast    (free, no key)
+Weatherbit:     https://api.weatherbit.io/v2.0/forecast   (key: ffd13dad...)
+OpenWeather:    https://api.openweathermap.org/data/2.5   (key: 701cf29b...)
+Gemini AI:      https://generativelanguage.googleapis.com (key: AIzaSyDD...)
+
+# ── KAFKA TOPICS ────────────────────────────────────────────
+citizen_reports       (3 partitions)  — incoming reports
+weather_updates       (2 partitions)  — weather refresh
+disease_cases         (3 partitions)  — case counts
+outbreak_predictions  (3 partitions)  — ML forecasts
+government_actions    (2 partitions)  — execution plans

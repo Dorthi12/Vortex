@@ -1,0 +1,139 @@
+version: "3.9"
+
+# ============================================================
+# Disease Intelligence System — Full Infrastructure Stack
+# Services: FastAPI App, PostgreSQL+PostGIS, Redis, Kafka, Zookeeper
+# ============================================================
+
+services:
+
+  # ── CORE APPLICATION ────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: disease-intel-app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/disease_intel
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - WEATHERBIT_API_KEY=${WEATHERBIT_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    volumes:
+      - ./models/saved:/app/models/saved
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - disease-intel-net
+
+  # ── DATABASES ────────────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: disease-intel-postgres
+    environment:
+      POSTGRES_DB: disease_intel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - disease-intel-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: disease-intel-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - disease-intel-net
+
+  # ── KAFKA STREAMING ──────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: disease-intel-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - disease-intel-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: disease-intel-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - disease-intel-net
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: disease-intel-kafka-init
+    depends_on:
+      - kafka
+    command: >
+      bash -c "
+        echo 'Waiting for Kafka to be ready...' &&
+        kafka-topics --bootstrap-server kafka:9092 --list &&
+        echo 'Creating topics...' &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic citizen_reports --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic weather_updates --partitions 2 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic disease_cases --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic outbreak_predictions --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic government_actions --partitions 2 --replication-factor 1 &&
+        echo 'Topics created successfully.'
+      "
+    networks:
+      - disease-intel-net
+
+  # ── MONITORING ───────────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: disease-intel-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: disease-intel
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      - disease-intel-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  disease-intel-net:
+    driver: bridge
