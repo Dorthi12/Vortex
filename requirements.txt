@@ -1,0 +1,51 @@
+# NETRAVAAH - Social Media Analysis Module
+# Install with: pip install -r requirements.txt
+
+# API Framework
+fastapi
+uvicorn
+
+# Pydantic for request/response models
+pydantic
+
+# NLP and Transformers
+transformers
+torch
+torchvision
+torchaudio
+
+# spaCy for NER and location extraction
+spacy
+# After installing run: python -m spacy download en_core_web_sm
+
+# Geocoding for lat/lng extraction
+geopy
+
+# Image processing
+Pillow
+pytesseract
+# Note: pytesseract also requires Tesseract OCR installed on your system
+# Download from: https://github.com/UB-Mannheim/tesseract/wiki
+
+# Computer vision model training
+torchvision
+
+# Database
+pymongo
+
+# Data processing
+pandas
+numpy
+scikit-learn
+
+# Environment variables
+python-dotenv
+
+# HTTP requests
+requests
+
+# Image dataset downloading
+icrawler
+
+# Kaggle dataset downloads
+kaggle
