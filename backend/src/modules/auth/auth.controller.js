@@ -5,7 +5,10 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../../utils/jwt.utils.js";
-import { uk } from "zod/v4/locales";
+import {
+  checkMultipleImages,
+  cleanupS3Objects,
+} from "../../utils/obscenity.util.js";
 
 const cookieOptions = {
   httpOnly: true,
@@ -163,10 +166,11 @@ export const refreshAccessToken = async (req, res, next) => {
   }
 };
 
-export const forgotPassword = async (req, res) => {
-  res.json({
-    message: "Forgot password flow not implemented yet",
-  });
+export const forgotPassword = async (req, res, next) => {
+  try {
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const resetPassword = async (req, res, next) => {

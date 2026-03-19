@@ -2,27 +2,29 @@ import express from "express";
 import { roleMiddleware } from "../../middleware/role.middleware.js";
 
 // import {
-//   createIssue,
-//   getNearbyIssues,
-//   searchIssues,
-//   getIssueById,
-//   getMyIssues,
-//   updateIssue,
-//   deleteIssue,
-//   addIssueMedia,
-//   deleteIssueMedia,
-//   assignIssue,
-//   updateIssueStatus,
-//   getIssueAIAnalysis,
-//   getTopPriorityIssues,
-//   getTrendingIssues,
-//   getIssueCategoryStats,
-//   getIssueHeatmap,
+//   // createIssue,
+//   // getNearbyIssues,
+//   // searchIssues,
+//   // getIssueById,
+//   // getMyIssues,
+//   // updateIssue,
+//   // deleteIssue,
+//   // addIssueMedia,
+//   // deleteIssueMedia,
+//   // assignIssue,
+//   // updateIssueStatus,
+//   // getIssueAIAnalysis,
+//   // getTopPriorityIssues,
+//   // getTrendingIssues,
+//   // getIssueCategoryStats,
+//   // getIssueHeatmap,
+//   // generatePresignedURLs,
 // } from "./issue.controller.js";
 
 const router = express.Router();
 
-// router.post("/", uploadMultiple("media", 5, "issues"), createIssue);
+// router.post("/uploads", generatePresignedURLs);
+// router.post("/", createIssue);
 // router.get("/nearby", getNearbyIssues);
 // router.get("/search", searchIssues);
 // router.get("/:issueId", getIssueById);

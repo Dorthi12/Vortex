@@ -4,6 +4,10 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import path from "path";
 import s3Client from "../../config/s3.js";
+import {
+  checkMultipleImages,
+  cleanupS3Objects,
+} from "../../utils/obscenity.util.js";
 
 export const getUserInfo = async (req, res, next) => {
   try {
@@ -115,8 +119,16 @@ export const updateUserInfo = async (req, res, next) => {
         updateData[key] = req.body[key];
       }
     }
-
     if (req.body.key) {
+      const { isFlagged, labels } = await checkMultipleImages(req.body.key);
+      if (isFlagged) {
+        await cleanupS3Objects(req.body.key);
+        return res.status(400).json({
+          success: false,
+          error: "Image contains inappropriate content.",
+          flags: labels,
+        });
+      }
       updateData.awsS3ObjectKey = req.body.key;
     }
 

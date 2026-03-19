@@ -20,7 +20,7 @@ export const updateUserSchema = z
       .max(new Date(), "Date of birth cannot be in the future")
       .optional(),
 
-    profileImageUrl: z.url("Profile image must be a valid URL").optional(),
+    key: z.string().optional(),
 
     themePreference: z.enum(["LIGHT", "DARK", "SYSTEM"]).optional(),
 

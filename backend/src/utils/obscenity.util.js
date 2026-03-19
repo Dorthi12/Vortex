@@ -28,16 +28,31 @@ export const checkImageModeration = async (s3Key) => {
 };
 
 export const checkMultipleImages = async (s3Keys) => {
-  for (const key of s3Keys) {
-    const { isFlagged, labels } = await checkImageModeration(key);
-    if (isFlagged) {
-      return { isFlagged: true, flaggedKey: key, labels };
+  if (!Array.isArray(s3Keys)) {
+    s3Keys = [s3Keys];
+  }
+
+  const results = await Promise.all(
+    s3Keys.map((key) => checkImageModeration(key)),
+  );
+
+  for (let i = 0; i < results.length; i++) {
+    if (results[i].isFlagged) {
+      return {
+        isFlagged: true,
+        flaggedKey: s3Keys[i],
+        labels: results[i].labels,
+      };
     }
   }
+
   return { isFlagged: false, labels: [] };
 };
 
 export const cleanupS3Objects = async (keys) => {
+  if (!Array.isArray(keys)) {
+    keys = [keys]; // convert single key to array
+  }
   await Promise.all(
     keys.map((key) =>
       s3Client.send(

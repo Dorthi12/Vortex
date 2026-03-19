@@ -58,3 +58,20 @@ export const getIssueAIAnalysis = async (req, res, next) => {
     next(error);
   }
 };
+// export const createIssue = async (req, res, next) => {};
+// getNearbyIssues,
+// searchIssues,
+// getIssueById,
+// getMyIssues,
+// updateIssue,
+// deleteIssue,
+// addIssueMedia,
+// deleteIssueMedia,
+// assignIssue,
+// updateIssueStatus,
+// getIssueAIAnalysis,
+// getTopPriorityIssues,
+// getTrendingIssues,
+// getIssueCategoryStats,
+// getIssueHeatmap,
+// generatePresignedURLs,
