@@ -14,9 +14,11 @@ export const registerSchema = z.object({
   role: z.enum(["USER", "LEADER", "ADMINISTRATOR", "REPRESENTATIVE"]),
   dob: z.coerce.date(),
   gender: z.enum(["Male", "Female", "Others", "Prefer not to say"]),
+  loggedIn: z.boolean().optional(),
 });
 
 export const loginSchema = z.object({
   email: z.email(),
   password: z.string().min(1, "Password cannot be empty"),
+  loggedIn: z.boolean().optional(),
 });

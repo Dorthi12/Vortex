@@ -80,7 +80,7 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password, loggedIn = false } = req.body;
-
+    console.log(req.body);
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -107,11 +107,11 @@ export const login = async (req, res, next) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    if (loggedIn)
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken },
-      });
+    if (loggedIn) console.log("loggedIn");
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
 
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
