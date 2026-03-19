@@ -5,6 +5,10 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import path from "path";
 import s3Client from "../../config/s3.js";
+import {
+  checkMultipleImages,
+  cleanupS3Objects,
+} from "../../utils/obscenity.util.js";
 
 export const generateUploadUrls = async (req, res, next) => {
   try {
@@ -14,7 +18,7 @@ export const generateUploadUrls = async (req, res, next) => {
         message: "Files array required",
       });
     }
-    const allowedTypes = ["image/png", "image/jpeg", "video/mp4"];
+    const allowedTypes = ["image/png", "image/jpeg"];
 
     const results = [];
     for (const file of files) {
@@ -55,7 +59,17 @@ export const generateUploadUrls = async (req, res, next) => {
 export const createPost = async (req, res, next) => {
   try {
     const { caption, locationName, latitude, longitude, mediaKeys } = req.body;
-
+    if (mediaKeys && mediaKeys.length > 0) {
+      const { isFlagged, labels } = await checkMultipleImages(mediaKeys);
+      if (isFlagged) {
+        await cleanupS3Objects(mediaKeys);
+        return res.status(400).json({
+          success: false,
+          error: "One or more images contain inappropriate content.",
+          flags: labels,
+        });
+      }
+    }
     const post = await prisma.post.create({
       data: {
         caption,
@@ -99,7 +113,6 @@ export const createPost = async (req, res, next) => {
       ...media,
       url: `${process.env.AWS_S3_BASE_URL}/${media.awsS3ObjectKey}`,
     }));
-
     res.status(201).json({
       success: true,
       post: {

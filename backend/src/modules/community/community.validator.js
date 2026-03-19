@@ -17,4 +17,5 @@ export const postSchema = z.object({
     .number()
     .min(-180, "Longitude must be >= -180")
     .max(180, "Longitude must be <= 180"),
+  mediaKeys: z.array(z.string()).optional(),
 });
