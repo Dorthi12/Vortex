@@ -58,6 +58,7 @@ model User {
   following       Follow[]        @relation("UserFollowers")
   issueReports    IssueReport[]   @relation("IssueReporter")
   assignedIssues  IssueReport[]   @relation("Assignee")
+  conversations   Conversation[]
 }
 
 model Post {
@@ -110,6 +111,8 @@ model Media {
   post           Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
   issueReportId  String?
   issueReport    IssueReport? @relation(fields: [issueReportId], references: [id], onDelete: Cascade)
+  messageId      String?
+  message        Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
   awsS3ObjectKey String?
   publicId       String
   type           MediaType
@@ -273,4 +276,32 @@ model IssueReport {
   aiAnalysis    AIAnalysis[]
   assignedToId  String?
   assignedTo    User?         @relation("Assignee", fields: [assignedToId], references: [id])
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String    @default("New Chat")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  media          Media[]
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
 }

@@ -11,6 +11,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import communityRoutes from "./modules/community/community.routes.js";
 import issueRoutes from "./modules/issues/issue.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
+import aiRoutes from "./modules/ai/ai.routes.js";
 
 const app = express();
 app.use(passport.initialize());
@@ -51,6 +52,7 @@ app.use("/auth", authRoutes);
 app.use("/community", authMiddleware, communityRoutes);
 app.use("/issue", authMiddleware, issueRoutes);
 app.use("/users", authMiddleware, userRoutes);
+app.use("/ai", authMiddleware, aiRoutes);
 
 app.use(errorMiddleware);
 
