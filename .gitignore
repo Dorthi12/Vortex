@@ -28,3 +28,6 @@ src/social_media_analysis/data/apy.csv
 src/social_media_analysis/data/india_hazard_master_dataset_final.csv
 src/social_media_analysis/resource_monitor/__pycache__/
 src/social_media_analysis/test_mongo.py
+
+
+src/social_media_analysis/fairness_monitor/__pycache__/
