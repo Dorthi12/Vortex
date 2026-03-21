@@ -1,6 +1,6 @@
 import prisma from "../../config/db.js";
 import llm from "../../config/llm.js";
-
+import { generateRAGResponse } from "../../services/rag.service.js";
 export const createConversation = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -48,6 +48,11 @@ export const sendMessage = async (req, res, next) => {
     if (!conversation) {
       throw new Error("Conversation not found or unauthorized");
     }
+    const messages = await prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "desc" },
+      take: CONTEXT_LIMIT,
+    });
     await prisma.message.create({
       data: {
         conversationId,
@@ -56,31 +61,17 @@ export const sendMessage = async (req, res, next) => {
       },
     });
 
-    const messages = await prisma.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: "desc" },
-      take: CONTEXT_LIMIT,
-    });
-
     const orderedMessages = messages.reverse();
-
-    const formattedMessages = [
-      {
-        role: "system",
-        content:
-          'You are a ai assistant chatbot for this website named "Netravaah". Give clear, step-by-step, accurate answers. Do not guess unknown facts.',
-      },
-      ...orderedMessages.map((m) => ({
-        role: m.role.toLowerCase(),
-        content: m.content,
-      })),
-    ];
-    const response = await llm.invoke(formattedMessages);
-
-    const reply =
-      typeof response.content === "string"
-        ? response.content
-        : response.content?.[0]?.text || "";
+    const history = orderedMessages.map((m) => ({
+      role: m.role.toLowerCase(),
+      content: m.content,
+    }));
+    const { reply, usedRag } = await generateRAGResponse({
+      query: message,
+      userId,
+      history,
+    });
+    console.log(usedRag);
     await prisma.message.create({
       data: {
         conversationId,
