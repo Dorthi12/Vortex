@@ -10,7 +10,7 @@ const pc = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY,
 });
 
-const index = pc.index(process.env.PINECONE_INDEX);
+const index = pc.index(process.env.PINECONE_INDEX, process.env.PINECONE_HOST);
 
 import { createEmbeddingsBatch } from "../src/services/embed.service.js";
 
@@ -41,10 +41,10 @@ const run = async () => {
     console.log("🚀 Starting ingestion...");
 
     const allChunks = documents.flatMap((doc) => chunkText(doc));
-
     console.log("📦 Total chunks:", allChunks.length);
 
     const embeddings = await createEmbeddingsBatch(allChunks);
+    console.log("Embedding dimension:", embeddings[0].length);
     const vectors = allChunks.map((text, i) => ({
       id: uuidv4(),
       values: embeddings[i],
@@ -54,13 +54,8 @@ const run = async () => {
         createdAt: new Date().toISOString(),
       },
     }));
-    console.log(vectors);
 
-    // console.log("Embeddings length:", embeddings?.length);
-    // console.log("First embedding:", embeddings?.[0]);
-    // console.log("Vectors length:", vectors.length);
-
-    await index.namespace(NAMESPACE).upsert(vectors);
+    await index.namespace(NAMESPACE).upsert({ records: vectors });
 
     console.log("✅ Successfully upserted vectors!");
   } catch (error) {

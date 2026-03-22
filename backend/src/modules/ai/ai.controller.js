@@ -71,7 +71,6 @@ export const sendMessage = async (req, res, next) => {
       userId,
       history,
     });
-    console.log(usedRag);
     await prisma.message.create({
       data: {
         conversationId,
