@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand Primary Colors */
+  --color-gov-navy: #0A2342;
+  --color-gov-navy-light: #123054;
+  --color-royal-blue: #0F4C81;
+  --color-royal-blue-light: #145E9E;
+  --color-persian-blue: #1C39BB;
+  --color-brand-yellow: #F59E0B;
+  --color-brand-yellow-light: #FEF3C7;
+  --color-sea-green: #2E8B57;
+  --color-sea-green-light: #3CB371;
+  --color-dark-green: #0B4A25;
+  --color-dark-green-light: #145E2F;
+  --color-med-green: #059669;
+  --color-med-green-light: #10b981;
+  --color-emerg-red: #dc2626;
+  --color-emerg-red-light: #ef4444;
+
+  /* Education Theme Colors */
+  --color-edu-purple: #7C3AED;
+  --color-edu-gold: #D4AF37;
+  
+  /* Steel Blue Theme for Infrastructure */
+  --color-steel-blue: #4682B4;
+  --color-steel-blue-light: #B0C4DE;
+  --color-steel-blue-dark: #2C5282;
+  
+  /* Brand Neutral Colors */
+  --color-neutral-white: #FFFFFF;
+  --color-neutral-slate: #F8FAFC;
+  --color-neutral-text: #1E293B;
+  --color-neutral-text-muted: #64748B;
+  --color-border-subtle: #E2E8F0;
+
+  /* Brand Status Colors */
+  --color-success: #16A34A;
+  --color-success-light: #DCFCE7;
+  --color-warning: #EA580C;
+  --color-warning-light: #FFEDD5;
+  --color-danger: #DC2626;
+  --color-danger-light: #FEE2E2;
+  --color-info: #2563EB;
+  --color-info-light: #DBEAFE;
+
+  /* Standard Theme Aliases for Shadcn alignment */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-form-text: var(--form-text);
+  --color-form-bg: var(--form-bg);
+  --color-form-border: var(--form-border);
+  --color-form-label: var(--form-label);
+
+  /* Typography */
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  /* Radii */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --background: #FFFFFF; /* Pure White Background */
+  --foreground: #1E293B; /* Neutral Text */
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0F4C81; /* Royal Blue */
+  --radius: 0.75rem;
+  --form-label: #0F4C81; /* Royal Blue Form Labels by default in light mode */
+  --form-text: #1E293B;
+  --form-bg: #FFFFFF;
+  --form-border: #E2E8F0;
+
+  /* Custom HSL-like variables for opacity modifiers if needed */
+  --gov-navy-raw: 10 35 66;
+  --royal-blue-raw: 15 76 129;
+  --persian-blue-raw: 28 57 187;
+}
+
+.dark {
+  --background: #08111E; /* Extremely Deep Slate/Navy Blue */
+  --foreground: #F8FAFC;
+  --card: #0A1626; /* Dark Navy card background */
+  --card-foreground: #F8FAFC;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #1C39BB; /* Persian Blue in dark mode */
+  --form-label: #F8FAFC;
+  --form-text: #F8FAFC;
+  --form-bg: #0A1626;
+  --form-border: #1E293B;
+
+  /* Theme color overrides for dark mode classes */
+  --color-neutral-text: #F8FAFC;
+  --color-neutral-text-muted: #94A3B8;
+  --color-neutral-slate: #0C1A2E;
+  --color-border-subtle: #1E293B;
+}
+
+/* Custom Base Rules & Utilities */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Government/Enterprise-grade focus outlines for WCAG accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Modern Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel {
+  background: rgba(10, 22, 38, 0.7);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.glass-navbar {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-navbar {
+  background: rgba(8, 17, 30, 0.8);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+/* Interactive hover shadow transitions */
+.smooth-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Force light form theme inside authentication layout context */
+.auth-layout-context label:not(.cursor-pointer) {
+  color: #0F4C81 !important; /* Royal Blue headings/labels! */
+  font-weight: 600 !important;
+}
+
+.auth-layout-context input,
+.auth-layout-context select,
+.auth-layout-context textarea {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #CBD5E1 !important;
+}
+
+.auth-layout-context input::placeholder,
+.auth-layout-context textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+.auth-layout-context input:focus,
+.auth-layout-context select:focus,
+.auth-layout-context textarea:focus {
+  border-color: #0F4C81 !important;
+  box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2) !important;
+}
+
