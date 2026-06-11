@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List,Optional
 from confluent_kafka.admin import AdminClient, NewTopic
 from ..config.settings import settings
 
@@ -63,6 +63,8 @@ def initialize_topics(admin_client: Optional[AdminClient] = None) -> List[str]:
     try:
         cluster_metadata = admin_client.list_topics(timeout=10.0)
         existing_topics = set(cluster_metadata.topics.keys())
+        num_brokers = len(cluster_metadata.brokers)
+        logger.info(f"Connected to Kafka cluster. Available brokers: {num_brokers}")
     except Exception as e:
         logger.error(f"Failed to fetch metadata from brokers: {e}")
         return []
@@ -75,11 +77,15 @@ def initialize_topics(admin_client: Optional[AdminClient] = None) -> List[str]:
             logger.info(f"Topic '{name}' already exists.")
             created_topics.append(name)
             continue
+        
+        # Fallback replication factor dynamically to fit single-node dev setups vs multi-node prod setups
+        rep_factor = min(spec["replication_factor"], num_brokers)
+        logger.info(f"Topic '{name}': setting replication factor to {rep_factor} (requested {spec['replication_factor']})")
             
         new_topics.append(NewTopic(
             topic=name,
             num_partitions=spec["partitions"],
-            replication_factor=spec["replication_factor"],
+            replication_factor=rep_factor,
             config=spec.get("config", {})
         ))
 
