@@ -1,0 +1,7 @@
+{
+  "model_name": "subsidy_recommender",
+  "version": "1.0.0",
+  "framework": "knowledge-base-engine",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["state", "farmer_category", "land_size_hectares", "crop_type"]
+}

@@ -1,0 +1,6 @@
+# Place your trained model files here:
+# - flood_model.pkl
+# - landslide_model.pkl
+#
+# These will be automatically loaded by hazard_service.py
+# The service gracefully falls back to rule-based predictions if models are not found.

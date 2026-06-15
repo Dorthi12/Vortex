@@ -1,0 +1,7 @@
+{
+  "model_name": "fertilizer_recommender",
+  "version": "1.0.0",
+  "framework": "rule-engine",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["crop", "soil_type", "nitrogen", "phosphorus", "potassium"]
+}

@@ -1,0 +1,7 @@
+{
+  "model_name": "multilingual_farmer_agent",
+  "version": "1.0.0",
+  "framework": "agent-translation-pipeline",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["audio_base64", "text_input", "input_language", "output_channel"]
+}

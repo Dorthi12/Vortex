@@ -524,7 +524,7 @@ export default function NationalCommandCenter() {
         {/* ============================== */}
         {/* LEFT DECK: INCIDENTS & ALERTS  */}
         {/* ============================== */}
-        <section className="w-[360px] xl:w-[380px] shrink-0 flex flex-col gap-4 overflow-hidden h-full">
+        <section className="w-[420px] xl:w-[480px] shrink-0 flex flex-col gap-4 overflow-hidden h-full">
           
           {/* Card 1: Active Incidents Registry */}
           <Card className={cn(
@@ -1014,7 +1014,7 @@ export default function NationalCommandCenter() {
         {/* ======================================= */}
         {/* RIGHT DECK: RESOURCES, FLEET & WEATHER */}
         {/* ======================================= */}
-        <section className="w-[340px] xl:w-[360px] shrink-0 flex flex-col gap-4 overflow-hidden h-full">
+        <section className="w-[400px] xl:w-[460px] shrink-0 flex flex-col gap-4 overflow-hidden h-full">
           
           {/* Card 1: Resource Deployment Status */}
           <Card className={cn(

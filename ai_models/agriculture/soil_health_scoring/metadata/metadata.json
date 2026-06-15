@@ -1,0 +1,7 @@
+{
+  "model_name": "soil_health_scoring_predictor",
+  "version": "1.0.0",
+  "framework": "scikit-learn",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["ph", "organic_matter_percent", "nitrogen", "phosphorus", "potassium", "bulk_density"]
+}

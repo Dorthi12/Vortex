@@ -1,0 +1,7 @@
+{
+  "model_name": "agricultural_risk_engine",
+  "version": "1.0.0",
+  "framework": "weighted-index-engine",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["district", "crop", "weather_risk_score", "pest_risk_score", "disease_risk_score", "market_risk_score", "yield_risk_score"]
+}

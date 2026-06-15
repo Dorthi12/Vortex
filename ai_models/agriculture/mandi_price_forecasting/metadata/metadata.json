@@ -1,0 +1,7 @@
+{
+  "model_name": "mandi_price_forecasting_predictor",
+  "version": "1.0.0",
+  "framework": "scikit-learn",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["market_name", "commodity", "target_date"]
+}

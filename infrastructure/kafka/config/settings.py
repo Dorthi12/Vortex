@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class KafkaConfig(BaseModel):
     # Broker Config
-    BOOTSTRAP_SERVERS: str = Field(default_factory=lambda: os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
+    BOOTSTRAP_SERVERS: str = Field(default_factory=lambda: os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092"))
     SCHEMA_REGISTRY_URL: str = Field(default_factory=lambda: os.environ.get("KAFKA_SCHEMA_REGISTRY_URL", "http://localhost:8081"))
     CLIENT_ID: str = Field(default_factory=lambda: os.environ.get("KAFKA_CLIENT_ID", "netravaah-kafka-core"))
     DEFAULT_GROUP_ID: str = Field(default_factory=lambda: os.environ.get("KAFKA_DEFAULT_GROUP_ID", "netravaah-consumer-group"))

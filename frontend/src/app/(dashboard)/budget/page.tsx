@@ -15,7 +15,8 @@ import {
   ShieldCheck, 
   Activity, 
   Wrench,
-  Clock
+  Clock,
+  DollarSign
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -833,6 +834,66 @@ export default function BudgetOptimization() {
 
       </div>
 
+      {/* Upgraded Optimization Recommendations */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <Card className="border border-border-subtle bg-white dark:bg-[#0A1228] p-5">
+          <CardHeader className="p-0 pb-2">
+            <span className="text-[9px] font-black uppercase text-slate-400">Best Fund Allocation</span>
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-white mt-1">AI Recommendation Model</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 text-xs font-semibold text-slate-655 dark:text-slate-400 space-y-1.5">
+            <div className="flex justify-between">
+              <span>Roads Target:</span>
+              <span className="text-slate-950 dark:text-white font-mono">₹14.0M</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Bridges Target:</span>
+              <span className="text-slate-950 dark:text-white font-mono">₹12.0M</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Dams Target:</span>
+              <span className="text-slate-950 dark:text-white font-mono">₹9.0M</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Smart Grid Target:</span>
+              <span className="text-slate-950 dark:text-white font-mono">₹11.5M</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border-subtle bg-white dark:bg-[#0A1228] p-5">
+          <CardHeader className="p-0 pb-2">
+            <span className="text-[9px] font-black uppercase text-slate-400">Expected Risk Reduction</span>
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-white mt-1">Infrastructure Safety Gains</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 flex flex-col justify-between h-full min-h-[70px]">
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-450">
+              {Math.max(1.0, Math.round(100 - overallRisk - 70))}% Reduction
+            </span>
+            <span className="text-[10px] text-slate-450 leading-relaxed font-bold">
+              Derived from reallocation of administration indexes into structural joint overlays.
+            </span>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border-subtle bg-white dark:bg-[#0A1228] p-5">
+          <CardHeader className="p-0 pb-2">
+            <span className="text-[9px] font-black uppercase text-slate-400">Projected Savings</span>
+            <CardTitle className="text-sm font-bold text-slate-900 dark:text-white mt-1">Prevention & Emergency Costs</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 flex flex-col justify-between h-full min-h-[70px]">
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-450 flex items-center">
+              <DollarSign className="w-5 h-5 shrink-0" />
+              ₹{Math.max(12.5, parseFloat(((100 - overallRisk) * 0.45).toFixed(2)))} Lakhs / yr
+            </span>
+            <span className="text-[10px] text-slate-450 leading-relaxed font-bold">
+              Projected reduction in emergency structural damage response fees.
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }
+

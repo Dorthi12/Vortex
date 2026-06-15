@@ -1,0 +1,95 @@
+{
+  "schemes": [
+    {
+      "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+      "scope": "National",
+      "eligible_states": ["all"],
+      "farmer_categories": ["Small", "Marginal", "SC/ST", "Woman"],
+      "max_land_hectares": 2.0,
+      "eligible_crops": ["all"],
+      "benefit_type": "Direct Income Support",
+      "benefit_rate_per_year_inr": 6000.0,
+      "benefit_calculator": "fixed",
+      "required_documents": [
+        "Aadhaar Card",
+        "Land Ownership Certificate (Khatauni)",
+        "Active Bank Account Passbook",
+        "Mobile Number linked with Aadhaar"
+      ]
+    },
+    {
+      "name": "PMKSY (Per Drop More Crop - Micro Irrigation)",
+      "scope": "National",
+      "eligible_states": ["all"],
+      "farmer_categories": ["Small", "Marginal", "Woman", "SC/ST", "Large"],
+      "max_land_hectares": 5.0,
+      "eligible_crops": ["all"],
+      "benefit_type": "Subsidy on Drip/Sprinkler Installation",
+      "benefit_rate_per_hectare_inr": 25000.0,
+      "benefit_calculator": "per_hectare_subsidy",
+      "rates": {
+        "Small": 0.55,
+        "Marginal": 0.55,
+        "Woman": 0.55,
+        "SC/ST": 0.55,
+        "Large": 0.45
+      },
+      "required_documents": [
+        "Land Title Deeds",
+        "Aadhaar Card",
+        "Electricity Bill / Water Source Proof",
+        "Soil and Water Test Report"
+      ]
+    },
+    {
+      "name": "NFSM (National Food Security Mission Seed Subsidy)",
+      "scope": "National",
+      "eligible_states": ["all"],
+      "farmer_categories": ["Small", "Marginal", "Woman", "SC/ST", "Large"],
+      "max_land_hectares": 5.0,
+      "eligible_crops": ["rice", "wheat", "pulses", "coarse_cereals"],
+      "benefit_type": "Subsidy on High-Yielding Seeds",
+      "benefit_rate_per_hectare_inr": 2000.0,
+      "benefit_calculator": "per_hectare_fixed",
+      "required_documents": [
+        "Land Record Copy (Patta/Chitta)",
+        "Farmer ID Card",
+        "Seed Purchase Bill from authorized dealer",
+        "Aadhaar Card"
+      ]
+    },
+    {
+      "name": "Rythu Bandhu (Telangana State Support)",
+      "scope": "State",
+      "eligible_states": ["telangana"],
+      "farmer_categories": ["Small", "Marginal", "Woman", "SC/ST", "Large"],
+      "max_land_hectares": 10.0,
+      "eligible_crops": ["all"],
+      "benefit_type": "Direct Input Subsidy",
+      "benefit_rate_per_hectare_inr": 24710.0,
+      "benefit_calculator": "per_hectare_fixed",
+      "required_documents": [
+        "Pattadar Passbook / Land Ownership",
+        "Aadhaar Card",
+        "Bank Account Details (Telangana branch)"
+      ]
+    },
+    {
+      "name": "Krushak Assistance for Livelihood and Income Augmentation (KALIA - Odisha)",
+      "scope": "State",
+      "eligible_states": ["odisha"],
+      "farmer_categories": ["Small", "Marginal", "Woman", "SC/ST"],
+      "max_land_hectares": 2.0,
+      "eligible_crops": ["all"],
+      "benefit_type": "Direct Income Support",
+      "benefit_rate_per_year_inr": 10000.0,
+      "benefit_calculator": "fixed",
+      "required_documents": [
+        "Aadhaar Card",
+        "Odisha Resident Certificate",
+        "Land Record Copy",
+        "Bank Account linked to Aadhaar"
+      ]
+    }
+  ]
+}

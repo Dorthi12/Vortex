@@ -1,20 +1,12 @@
+// app/(dashboard)/complaints/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Plus, 
-  Search, 
-  MapPin, 
-  List, 
-  Map as MapIcon, 
-  Activity, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  ChevronRight,
-  ArrowUpDown
+  Plus, Search, MapPin, List, Map as MapIcon, Activity, CheckCircle2, 
+  AlertCircle, Clock, ChevronRight, MessageSquare, ThumbsUp, Eye, EyeOff, UserCheck
 } from 'lucide-react';
 import { useComplaintStore } from '@/store/useComplaintStore';
 import { useUiStore } from '@/store/useUiStore';
@@ -26,7 +18,7 @@ import { cn } from '@/lib/utils';
 
 export default function ComplaintsDashboard() {
   const router = useRouter();
-  const { complaints } = useComplaintStore();
+  const { complaints, supportIssue, verifyAffected, followIssue, activePolls, castPollVote } = useComplaintStore();
   const { setActiveTab } = useUiStore();
   
   // SSR Hydration safeguard
@@ -36,22 +28,25 @@ export default function ComplaintsDashboard() {
     setActiveTab('Complaints');
   }, [setActiveTab]);
 
-  // Filter States
+  // View & Filter States
+  const [viewMode, setViewMode] = useState<'community' | 'operations' | 'map'>('community');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedMapComplaint, setSelectedMapComplaint] = useState<Complaint | null>(null);
+
+  // User session simulation (for demo voting/interaction)
+  const currentUserId = 'user-101';
 
   if (!mounted) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
+      <div className="h-[60vh] flex items-center justify-center bg-[#F8FAFC] dark:bg-[#070D1A]">
         <div className="flex flex-col items-center gap-2">
           <span className="flex h-3 w-3 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-royal-blue opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-royal-blue"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
           </span>
-          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider animate-pulse">Synchronizing grievance database...</p>
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider animate-pulse">Synchronizing governance database...</p>
         </div>
       </div>
     );
@@ -60,7 +55,6 @@ export default function ComplaintsDashboard() {
   // Categories list
   const categories = [
     'All',
-    'Road & Infrastructure',
     'Water Supply & Drainage',
     'Solid Waste Management',
     'Electricity & Streetlights',
@@ -90,360 +84,499 @@ export default function ComplaintsDashboard() {
 
   const getStatusBadge = (status: ComplaintStatus) => {
     const styles = {
-      Submitted: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30',
+      Submitted: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-450 dark:border-amber-900/30',
       Assigned: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
       'In Progress': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30',
       Resolved: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30',
-      Closed: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800',
+      Closed: 'bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800',
     };
     return (
-      <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border', styles[status])}>
+      <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase border', styles[status])}>
         {status}
       </span>
     );
   };
 
-  const getStatusIndicatorColor = (status: ComplaintStatus) => {
-    const colors = {
-      Submitted: 'bg-amber-500 border-amber-300',
-      Assigned: 'bg-blue-500 border-blue-300',
-      'In Progress': 'bg-purple-500 border-purple-300',
-      Resolved: 'bg-green-500 border-green-300',
-      Closed: 'bg-slate-400 border-slate-300',
+  const getPriorityBadge = (score: number) => {
+    const level = score > 85 ? 'Critical' : score > 65 ? 'High' : score > 40 ? 'Medium' : 'Low';
+    const styles = {
+      Critical: 'bg-red-100 text-red-750 border-red-300 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30',
+      High: 'bg-orange-100 text-orange-700 border-orange-350 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30',
+      Medium: 'bg-amber-100 text-amber-705 border-amber-300 dark:bg-amber-950/20 dark:text-amber-450 dark:border-amber-900/30',
+      Low: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-850'
     };
-    return colors[status];
+    return (
+      <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase border', styles[level])}>
+        {level} (Score: {score})
+      </span>
+    );
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="space-y-6 max-w-[1600px] mx-auto min-h-screen bg-[#F8FAFC] dark:bg-[#070D1A] text-slate-900 dark:text-[#F8FAFC] p-4 transition-colors duration-300">
       
-      {/* 1. Header Area */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Top Header Row with View Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 dark:border-[#1A2744] pb-5">
         <div>
-          <span className="text-[10px] uppercase tracking-widest text-royal-blue dark:text-brand-yellow font-bold">Municipal Grievances</span>
-          <h1 className="text-3xl font-extrabold tracking-tight">Complaint Management</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mt-1">
-            File public reports, assign technical officers, and monitor incident SLA status tracking in real-time.
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#4682B4] dark:text-[#D4AF37]">
+            Civic Collaboration Hub
+          </span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
+            Community Governance Hub
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5 font-bold">
+            Discuss local grievances, coordinate verified affected groups, and track official responses.
           </p>
         </div>
-        <Link href="/complaints/new" passHref>
-          <Button variant="navy" className="flex items-center gap-1.5 h-10 px-4 cursor-pointer">
-            <Plus className="w-4.5 h-4.5" />
-            File New Complaint
-          </Button>
-        </Link>
-      </div>
 
-      {/* 2. Stats Summary Widget grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-card border-border-subtle shadow-xs">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <Activity className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-            </div>
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-slate-500">Total Filed</span>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{totalFiled}</h3>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border-subtle shadow-xs">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-            </div>
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-amber-600">Pending Action</span>
-              <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400">{pendingAction}</h3>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border-subtle shadow-xs">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-purple-50 dark:bg-purple-950/20 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 text-purple-500" />
-            </div>
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-purple-600">In Progress</span>
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{underInvestigation}</h3>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border-subtle shadow-xs">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-green-50 dark:bg-green-950/20 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-            </div>
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-green-600">Resolved & Closed</span>
-              <h3 className="text-lg font-bold text-green-700 dark:text-green-400">{resolvedClosed}</h3>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 3. Filters and Search Drawer */}
-      <Card className="bg-card border-border-subtle shadow-xs">
-        <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* View Switchers */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setViewMode('community')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer",
+              viewMode === 'community' ? "bg-[#4682B4] text-white border-[#4682B4]" : "bg-white dark:bg-[#0a1228] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400"
+            )}
+          >
+            Community View (Feed)
+          </button>
           
-          {/* Search Input Box */}
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <Search className="h-4 w-4 text-slate-400" />
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID, title, or description..."
-              className="w-full h-10 pl-9 pr-4 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-ring bg-slate-50 focus:bg-white dark:bg-slate-900 dark:border-slate-800 dark:focus:bg-slate-950 text-sm"
-            />
-          </div>
+          <button
+            onClick={() => setViewMode('operations')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer",
+              viewMode === 'operations' ? "bg-[#4682B4] text-white border-[#4682B4]" : "bg-white dark:bg-[#0a1228] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400"
+            )}
+          >
+            Admin Operations View
+          </button>
 
-          <div className="flex flex-wrap items-center gap-3">
-            
-            {/* Category Select Dropdown */}
-            <div className="flex flex-col">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-10 px-3 border border-slate-200 dark:border-slate-800 rounded-md text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring font-medium"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat === 'All' ? 'All Categories' : cat}</option>
-                ))}
-              </select>
+          <button
+            onClick={() => setViewMode('map')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer",
+              viewMode === 'map' ? "bg-[#4682B4] text-white border-[#4682B4]" : "bg-white dark:bg-[#0a1228] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400"
+            )}
+          >
+            Map View
+          </button>
+
+          <Link href="/complaints/new">
+            <Button size="sm" variant="success" className="font-bold text-xs h-9 shadow-md shadow-success/15 hover:scale-[1.02] active:scale-95 transition-all text-white">
+              <Plus className="w-4 h-4 mr-1" />
+              Report Issue
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Primary KPI Grid (4 Metrics) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white dark:bg-[#0A1228] border border-slate-200 dark:border-[#1A2744] shadow-sm">
+          <CardContent className="p-4 text-center">
+            <p className="text-[9px] uppercase font-bold text-slate-550 dark:text-slate-450">Active Incidents</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{totalFiled}</h3>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-[#0A1228] border border-slate-200 dark:border-[#1A2744] shadow-sm">
+          <CardContent className="p-4 text-center">
+            <p className="text-[9px] uppercase font-bold text-slate-550 dark:text-slate-450">Resolving Today</p>
+            <h3 className="text-2xl font-black text-amber-500 mt-1">{underInvestigation}</h3>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-[#0A1228] border border-slate-200 dark:border-[#1A2744] shadow-sm">
+          <CardContent className="p-4 text-center">
+            <p className="text-[9px] uppercase font-bold text-slate-550 dark:text-slate-450">Citizen Supports</p>
+            <h3 className="text-2xl font-black text-[#4682B4] mt-1">2.4k</h3>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-[#0A1228] border border-slate-200 dark:border-[#1A2744] shadow-sm">
+          <CardContent className="p-4 text-center">
+            <p className="text-[9px] uppercase font-bold text-slate-550 dark:text-slate-450">Resolution Rate</p>
+            <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-450 mt-1">94.8%</h3>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Container Section */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        
+        {/* Left Column (Main Feed or Operations log table - 3 cols) */}
+        <div className="xl:col-span-3 space-y-6">
+          
+          {/* SEARCH & FILTER STRIP */}
+          {viewMode !== 'map' && (
+            <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+              <div className="relative w-full md:max-w-xs">
+                <Search className="w-4 h-4 text-slate-450 absolute left-3 top-3" />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search comments, IDs, keywords..." 
+                  className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#070D1A] focus:outline-hidden focus:border-[#4682B4]"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="p-2 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#070D1A] font-bold cursor-pointer"
+                >
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="p-2 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#070D1A] font-bold cursor-pointer"
+                >
+                  {statuses.map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
+              </div>
+            </Card>
+          )}
+
+          {/* 1. COMMUNITY SOCIAL FEED VIEW */}
+          {viewMode === 'community' && (
+            <div className="space-y-4">
+              {filteredComplaints.length > 0 ? (
+                filteredComplaints.map((c) => (
+                  <Card key={c.id} className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] hover:border-[#4682B4]/40 transition-colors shadow-sm overflow-hidden">
+                    
+                    {/* Merge Group Announcement Banner */}
+                    {c.isMerged && (
+                      <div className="px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[10px] font-black text-amber-700 dark:text-amber-450 flex items-center justify-between">
+                        <span>⚠️ DUPLICATES DETECTED: {c.mergedCount} reports auto-merged into this incident</span>
+                        <span>Affected Citizens: {c.affectedCount * 3}</span>
+                      </div>
+                    )}
+
+                    <CardContent className="p-5 space-y-4">
+                      {/* Top profile header */}
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-sm font-black text-[#4682B4]">
+                            {c.citizenName?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-950 dark:text-white flex items-center gap-1.5">
+                              {c.citizenName}
+                            </h4>
+                            <p className="text-[10px] text-slate-450 font-bold">
+                              Ward: {c.location.split(',')[1] || 'Main PMC'} • {new Date(c.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Priority level */}
+                        <div className="flex flex-col items-end gap-1">
+                          {getPriorityBadge(c.priorityScore)}
+                          {getStatusBadge(c.status)}
+                        </div>
+                      </div>
+
+                      {/* Content Body */}
+                      <Link href={`/complaints/${c.id}`} className="block group no-underline">
+                        <h3 className="text-base font-black text-slate-950 dark:text-white group-hover:text-[#4682B4] transition-colors leading-snug">
+                          {c.title}
+                        </h3>
+                        <p className="text-xs text-slate-655 dark:text-slate-350 leading-relaxed font-bold mt-1.5">
+                          {c.description}
+                        </p>
+                      </Link>
+
+                      {/* Footer Actions strip */}
+                      <div className="border-t border-slate-150 dark:border-[#1A2744] pt-3 flex flex-wrap gap-4 items-center justify-between text-xs font-bold text-slate-500">
+                        <div className="flex items-center gap-4">
+                          {/* Support Button */}
+                          <button 
+                            onClick={() => supportIssue(c.id, currentUserId)}
+                            className={cn(
+                              "flex items-center gap-1 hover:text-[#4682B4] transition-colors cursor-pointer",
+                              c.supportedBy.includes(currentUserId) && "text-[#4682B4]"
+                            )}
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                            <span>👍 Support ({c.supportCount})</span>
+                          </button>
+
+                          {/* Affected citizen verification */}
+                          <button 
+                            onClick={() => verifyAffected(c.id, currentUserId)}
+                            className={cn(
+                              "flex items-center gap-1 hover:text-red-500 transition-colors cursor-pointer",
+                              c.affectedBy.includes(currentUserId) && "text-red-500"
+                            )}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            <span>Affected ({c.affectedCount})</span>
+                          </button>
+
+                          {/* Subscribe */}
+                          <button 
+                            onClick={() => followIssue(c.id, currentUserId)}
+                            className={cn(
+                              "flex items-center gap-1 hover:text-blue-500 transition-colors cursor-pointer",
+                              c.followedBy.includes(currentUserId) && "text-blue-500"
+                            )}
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>Subscribe ({c.followCount})</span>
+                          </button>
+                        </div>
+
+                        <Link href={`/complaints/${c.id}`} className="flex items-center gap-1 text-[#4682B4] hover:underline no-underline font-black">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Comments ({c.comments.length})</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      </div>
+
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-12 text-slate-500 font-bold text-xs">
+                  No community posts matched active search queries.
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Status Select Dropdown */}
-            <div className="flex flex-col">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="h-10 px-3 border border-slate-200 dark:border-slate-800 rounded-md text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring font-medium"
-              >
-                {statuses.map((stat) => (
-                  <option key={stat} value={stat}>{stat === 'All' ? 'All Statuses' : stat}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* View Mode Toggle Controls */}
-            <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shrink-0">
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'h-8 px-3 text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-all',
-                  viewMode === 'list' 
-                    ? 'bg-white dark:bg-slate-800 text-royal-blue dark:text-white shadow-xs font-bold' 
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                )}
-              >
-                <List className="w-3.5 h-3.5" />
-                List
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('map');
-                  if (filteredComplaints.length > 0 && !selectedMapComplaint) {
-                    setSelectedMapComplaint(filteredComplaints[0]);
-                  }
-                }}
-                className={cn(
-                  'h-8 px-3 text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-all',
-                  viewMode === 'map' 
-                    ? 'bg-white dark:bg-slate-800 text-royal-blue dark:text-white shadow-xs font-bold' 
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                )}
-              >
-                <MapIcon className="w-3.5 h-3.5" />
-                Map View
-              </button>
-            </div>
-
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 4. Display Area (Table View vs Interactive SVG Map View) */}
-      {viewMode === 'list' ? (
-        <Card className="bg-card border-border-subtle shadow-xs overflow-hidden">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-28 pl-6">ID</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead className="hidden md:table-cell">Category</TableHead>
-                    <TableHead className="hidden lg:table-cell">Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">Filed Date</TableHead>
-                    <TableHead className="w-20 text-center pr-6">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredComplaints.length > 0 ? (
-                    filteredComplaints.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-bold pl-6">
-                          <Link href={`/complaints/${c.id}`} className="text-royal-blue hover:text-persian-blue dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
-                            {c.id}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">{c.title}</div>
-                          <div className="text-[10px] text-slate-500 md:hidden mt-0.5">{c.category}</div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-slate-600 dark:text-slate-350">{c.category}</TableCell>
-                        <TableCell className="hidden lg:table-cell text-slate-500 line-clamp-1 max-w-[200px] mt-2.5">{c.location}</TableCell>
+          {/* 2. ADMIN OPERATIONS TICKET VIEW */}
+          {viewMode === 'operations' && (
+            <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] shadow-sm">
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50 dark:bg-black/20">
+                    <TableRow>
+                      <TableHead className="font-bold text-xs">Incident ID</TableHead>
+                      <TableHead className="font-bold text-xs">Category</TableHead>
+                      <TableHead className="font-bold text-xs">Title</TableHead>
+                      <TableHead className="font-bold text-xs">Priority</TableHead>
+                      <TableHead className="font-bold text-xs">Status</TableHead>
+                      <TableHead className="font-bold text-xs text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredComplaints.map((c) => (
+                      <TableRow key={c.id} className="hover:bg-slate-50 dark:hover:bg-[#101F42]/30 transition-colors">
+                        <TableCell className="font-mono font-bold text-xs">{c.id}</TableCell>
+                        <TableCell className="text-slate-500 text-xs">{c.category}</TableCell>
+                        <TableCell className="font-black text-xs text-slate-900 dark:text-white truncate max-w-[200px]">{c.title}</TableCell>
+                        <TableCell>{getPriorityBadge(c.priorityScore)}</TableCell>
                         <TableCell>{getStatusBadge(c.status)}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-slate-500 text-xs">
-                          {new Date(c.createdAt).toLocaleDateString([], { month: 'short', day: '2-digit', year: 'numeric' })}
-                        </TableCell>
-                        <TableCell className="text-center pr-6">
-                          <Link href={`/complaints/${c.id}`} passHref>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer">
-                              <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-450" />
+                        <TableCell className="text-right">
+                          <Link href={`/complaints/${c.id}`}>
+                            <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-[#4682B4]">
+                              Inspect Ticket
+                              <ChevronRight className="w-4 h-4 ml-1" />
                             </Button>
                           </Link>
                         </TableCell>
                       </TableRow>
-                    ))
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 3. GIS CLUSTERING MAP VIEW */}
+          {viewMode === 'map' && (
+            <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] p-5 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                
+                {/* Visual SVG Map (3 cols) */}
+                <div className="md:col-span-3 flex items-center justify-center bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
+                  <svg className="w-full aspect-square max-w-[300px]" viewBox="0 0 160 160">
+                    <line x1="80" y1="0" x2="80" y2="160" className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="0.5" strokeDasharray="3,3" />
+                    <line x1="0" y1="80" x2="160" y2="80" className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="0.5" strokeDasharray="3,3" />
+                    <rect x="10" y="10" width="140" height="140" fill="transparent" className="stroke-slate-300 dark:stroke-slate-700" strokeWidth="1" rx="5" />
+                    
+                    {/* Render Clustered GIS Marker Dots */}
+                    {complaints.map(c => {
+                      if (!c.coordinates) return null;
+                      const isSelected = selectedMapComplaint?.id === c.id;
+                      return (
+                        <g 
+                          key={c.id} 
+                          className="cursor-pointer"
+                          onClick={() => setSelectedMapComplaint(c)}
+                        >
+                          {isSelected && (
+                            <circle cx={c.coordinates.x} cy={c.coordinates.y} r="8" className="fill-none stroke-[#4682B4] stroke-[1.5] animate-ping" />
+                          )}
+                          <circle 
+                            cx={c.coordinates.x} 
+                            cy={c.coordinates.y} 
+                            r="5" 
+                            className={cn(
+                              "stroke-white dark:stroke-slate-900 stroke-[1]",
+                              c.status === 'Resolved' ? 'fill-emerald-500' :
+                              c.priorityScore > 85 ? 'fill-red-500' :
+                              c.priorityScore > 65 ? 'fill-orange-500' : 'fill-amber-500'
+                            )}
+                          />
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* Selected Marker Inspector Panel (2 cols) */}
+                <div className="md:col-span-2 flex flex-col justify-between">
+                  {selectedMapComplaint ? (
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-[9px] font-black uppercase text-[#4682B4]">GIS Map Node</span>
+                        <h4 className="font-extrabold text-sm text-slate-950 dark:text-white mt-1 leading-snug">{selectedMapComplaint.title}</h4>
+                        <p className="text-[10px] text-slate-500 font-bold">{selectedMapComplaint.location}</p>
+                      </div>
+
+                      <div className="space-y-2 text-xs font-semibold">
+                        <div className="flex justify-between">
+                          <span className="text-slate-450">Category:</span>
+                          <span className="truncate max-w-[120px]">{selectedMapComplaint.category}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-450">Priority Score:</span>
+                          <span>{selectedMapComplaint.priorityScore}/100</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-450">Supporters:</span>
+                          <span>{selectedMapComplaint.supportCount} Citizens</span>
+                        </div>
+                      </div>
+
+                      <Link href={`/complaints/${selectedMapComplaint.id}`}>
+                        <Button className="w-full bg-[#4682B4] hover:bg-[#4682B4]/90 text-white font-bold text-xs mt-4">
+                          View Full Discussion
+                        </Button>
+                      </Link>
+                    </div>
                   ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-40 text-center text-slate-500 dark:text-slate-450">
-                        No active complaints found matching filters.
-                      </TableCell>
-                    </TableRow>
+                    <div className="h-full flex items-center justify-center text-center p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                      <span className="text-xs text-slate-400 font-bold">Select a map marker to inspect incident records.</span>
+                    </div>
                   )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Interactive SVG Map container */}
-          <Card className="lg:col-span-2 bg-card border-border-subtle shadow-xs overflow-hidden flex flex-col justify-between min-h-[360px]">
-            <CardHeader className="pb-3 border-b border-border-subtle bg-slate-50 dark:bg-slate-900/40">
-              <CardTitle className="text-sm">Sector 4B Incident Locator Map</CardTitle>
-              <CardDescription className="text-[11px]">Geographic mapping of logged public complaints</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 relative bg-slate-50 dark:bg-slate-900/60 p-0 overflow-hidden flex items-center justify-center min-h-[300px]">
-              
-              {/* Map SVG grid lines */}
-              <svg className="absolute inset-0 w-full h-full text-slate-200 dark:text-slate-800/80 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <pattern id="mapGrid" width="25" height="25" patternUnits="userSpaceOnUse">
-                    <path d="M 25 0 L 0 0 0 25" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#mapGrid)" />
-                
-                {/* Roads contour simulation */}
-                <path d="M 10 50 Q 50 120 150 150 T 400 220" fill="none" stroke="rgba(15, 76, 129, 0.12)" strokeWidth="10" strokeLinecap="round" />
-                <path d="M 300 10 Q 220 130 50 280" fill="none" stroke="rgba(15, 76, 129, 0.12)" strokeWidth="8" strokeLinecap="round" />
-                <path d="M 50 10 L 350 280" fill="none" stroke="rgba(15, 76, 129, 0.08)" strokeWidth="6" strokeLinecap="round" />
-              </svg>
+                </div>
 
-              {/* Active Complaint coordinate nodes */}
-              {filteredComplaints.filter(c => c.coordinates).map((c) => {
-                const coords = c.coordinates!;
-                const isSelected = selectedMapComplaint?.id === c.id;
-                
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => setSelectedMapComplaint(c)}
-                    className={cn(
-                      'absolute h-5 w-5 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all hover:scale-125 z-10',
-                      getStatusIndicatorColor(c.status),
-                      isSelected && 'ring-4 ring-royal-blue/30 scale-125 z-20'
-                    )}
-                    style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
-                    title={c.title}
-                  >
-                    <span className="absolute -inset-1 rounded-full animate-ping bg-royal-blue/5 dark:bg-white/5 opacity-50" />
-                  </button>
-                );
-              })}
-
-              {/* Map Legend Overlay */}
-              <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 px-3 py-2 rounded-lg text-[10px] font-bold border border-border-subtle flex flex-col gap-1.5 text-slate-500 shadow-md">
-                <span className="text-slate-800 dark:text-slate-200 border-b border-border-subtle pb-1 mb-1 font-extrabold uppercase tracking-wide">Status Legend</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" /> Submitted (Unassigned)</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" /> Assigned</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-purple-500" /> In Progress</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" /> Resolved</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-slate-400" /> Closed</span>
               </div>
-            </CardContent>
+            </Card>
+          )}
+
+        </div>
+
+        {/* Right Column: Trending Sidebars & Community Polling (1/3 width) */}
+        <div className="space-y-6">
+          
+          {/* 1. COMMUNITY TRENDING PANEL */}
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] p-5 shadow-sm space-y-4">
+            <div>
+              <CardTitle className="text-sm font-black text-slate-950 dark:text-white">Trending Civic Issues</CardTitle>
+              <CardDescription className="text-[10px]">What citizens are supporting right now.</CardDescription>
+            </div>
+            
+            <div className="space-y-3">
+              {complaints.slice(0, 3).map((c) => (
+                <Link href={`/complaints/${c.id}`} key={`trend-${c.id}`} className="block group no-underline">
+                  <h5 className="text-xs font-black text-slate-950 dark:text-white group-hover:text-[#4682B4] transition-colors leading-snug">
+                    {c.title}
+                  </h5>
+                  <span className="text-[10px] text-slate-450 font-bold mt-1 block">
+                    👍 {c.supportCount} Citizens Support
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Trending tags */}
+            <div className="border-t border-slate-150 dark:border-slate-800 pt-3.5 space-y-2">
+              <span className="block text-[9px] font-black uppercase tracking-wider text-slate-450">Trending Tags</span>
+              <div className="flex flex-wrap gap-1.5">
+                {['#water', '#roads', '#electricity', '#garbage', '#hospital'].map((tag) => (
+                  <span key={tag} className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-850 text-[10px] font-bold text-slate-700 dark:text-slate-350">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
           </Card>
 
-          {/* Selected complaint card info */}
-          <Card className="bg-card border-border-subtle shadow-xs flex flex-col justify-between min-h-[360px]">
-            <CardHeader className="pb-3 border-b border-border-subtle">
-              <CardTitle>Grievance Inspect</CardTitle>
-              <CardDescription>Click a map node to view details</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 p-5 flex flex-col justify-between">
-              {selectedMapComplaint ? (
-                <div className="space-y-4 h-full flex flex-col justify-between">
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-slate-400">{selectedMapComplaint.id}</span>
-                      {getStatusBadge(selectedMapComplaint.status)}
-                    </div>
+          {/* 2. COMMUNITY POLLING SECTION */}
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] p-5 shadow-sm space-y-4">
+            <div>
+              <CardTitle className="text-sm font-black text-slate-950 dark:text-white">Community Polling</CardTitle>
+              <CardDescription className="text-[10px]">Vote on local developmental projects.</CardDescription>
+            </div>
+
+            <div className="space-y-4">
+              {activePolls.map((poll) => {
+                const totalVotes = Object.values(poll.votes).reduce((a, b) => a + b, 0);
+                const hasVoted = poll.votedBy.includes(currentUserId);
+                
+                return (
+                  <div key={poll.id} className="space-y-2 text-xs">
+                    <h5 className="font-extrabold text-slate-900 dark:text-white leading-snug">{poll.question}</h5>
                     
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">{selectedMapComplaint.title}</h4>
-                    
-                    <div className="flex items-start gap-1 text-[11px] text-slate-500">
-                      <MapPin className="w-3.5 h-3.5 text-royal-blue shrink-0 mt-0.5" />
-                      <span>{selectedMapComplaint.location}</span>
+                    <div className="space-y-1.5">
+                      {poll.options.map((option) => {
+                        const optVotes = poll.votes[option] || 0;
+                        const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+                        
+                        return (
+                          <div key={option} className="space-y-1">
+                            {hasVoted ? (
+                              <div className="p-2 bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded flex justify-between font-bold text-[10px]">
+                                <span className="truncate max-w-[130px]">{option}</span>
+                                <span>{percent}% ({optVotes})</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => castPollVote(poll.id, option, currentUserId)}
+                                className="w-full text-left p-2 border border-slate-200 dark:border-slate-800 hover:border-[#4682B4] rounded text-[10px] font-semibold cursor-pointer transition-colors"
+                              >
+                                {option}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3 bg-slate-50 dark:bg-slate-900/30 p-2.5 rounded border border-slate-100 dark:border-slate-800">
-                      {selectedMapComplaint.description}
-                    </p>
                   </div>
+                );
+              })}
+            </div>
+          </Card>
 
-                  <div className="space-y-2 mt-auto">
-                    {selectedMapComplaint.officer ? (
-                      <div className="text-[11px] text-slate-500 flex justify-between items-center bg-slate-50 dark:bg-slate-900/40 p-2 rounded">
-                        <span>Assigned Officer:</span>
-                        <strong className="text-slate-850 dark:text-slate-200">{selectedMapComplaint.officer.name}</strong>
-                      </div>
-                    ) : (
-                      <div className="text-[11px] text-amber-600 flex justify-between items-center bg-amber-50/50 dark:bg-amber-950/10 p-2 rounded border border-amber-100 dark:border-amber-900/20">
-                        <span>Assignment status:</span>
-                        <strong className="font-bold">Pending Dispatch</strong>
-                      </div>
-                    )}
+          {/* 3. AI CIVIC INSIGHTS PANEL */}
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] p-5 shadow-sm space-y-4">
+            <div>
+              <CardTitle className="text-sm font-black text-slate-950 dark:text-white flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-emerald-600 animate-pulse" />
+                AI Civic Insights
+              </CardTitle>
+            </div>
+            
+            <div className="space-y-3.5 text-xs">
+              <div className="p-2.5 bg-emerald-500/10 text-emerald-950 dark:text-emerald-400 border border-emerald-500/20 rounded-lg space-y-1 font-bold text-[10px]">
+                <span className="block font-black uppercase text-[8px] text-emerald-500">Emerging Issue</span>
+                Water leakage reports increased 34% in Hadapsar wards this week.
+              </div>
 
-                    <Link href={`/complaints/${selectedMapComplaint.id}`} passHref>
-                      <Button variant="outline" size="sm" className="w-full flex items-center justify-center gap-1 text-[11px] py-1.5 h-9 cursor-pointer">
-                        Manage Grievance
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center text-xs text-slate-400 py-10">
-                  <MapIcon className="w-8 h-8 text-slate-300 mb-2 animate-bounce" />
-                  Select an active incident marker on the locator map to inspect details.
-                </div>
-              )}
-            </CardContent>
+              <div className="p-2.5 bg-blue-500/10 text-blue-950 dark:text-blue-400 border border-blue-500/20 rounded-lg space-y-1 font-bold text-[10px]">
+                <span className="block font-black uppercase text-[8px] text-[#4682B4]">Complaint Hotspots</span>
+                Sector 4B Waste Depot road is flagged for repeating solid waste backlog.
+              </div>
+            </div>
           </Card>
 
         </div>
-      )}
+
+      </div>
 
     </div>
   );

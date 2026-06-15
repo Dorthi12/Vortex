@@ -62,7 +62,7 @@ const MENU_ITEM_PATHS: Record<string, string> = {
   'Governance Council': '/governance',
   'Reports': '/reports',
   'Policy Intelligence': '/policies',
-  'Simulation': '/simulation',
+  'Simulation': '/health/simulation',
   'Digital Twin': '/digital-twin',
   'Complaints': '/complaints',
   'Education': '/education',

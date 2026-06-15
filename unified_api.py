@@ -671,12 +671,26 @@ async def lifespan(app: FastAPI):
         logger.info("✅ [disease] services ready")
     except Exception as e: logger.warning(f"[disease] startup: {e}")
 
+    try:
+        from health.consumers.health_consumers import health_consumer
+        health_consumer.start()
+        logger.info("✅ [health] consumer started")
+    except Exception as e: logger.warning(f"[health] consumer startup: {e}")
+
     yield
+
+    try:
+        from health.consumers.health_consumers import health_consumer
+        health_consumer.stop()
+        logger.info("🛑 [health] consumer stopped")
+    except Exception: pass
 
     try: _disease()["pipe"].stop_all()
     except Exception: pass
     logger.info("🛑 NETRAVAAH Unified API shutdown")
 
+
+from health.routers.health_router import router as health_router
 
 app = FastAPI(
     title="NETRAVAAH — Unified AI Platform",
@@ -690,6 +704,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(health_router)
+
+try:
+    from hazard_service import hazard_router
+    app.include_router(hazard_router)
+    logger.info("✅ [hazard_service] router mounted")
+except Exception as e:
+    logger.warning(f"[hazard_service] could not mount: {e}")
+
+try:
+    from backend.infrastructure_service import infra_router
+    app.include_router(infra_router)
+    logger.info("✅ [infrastructure_service] router mounted")
+except Exception as e:
+    logger.warning(f"[infrastructure_service] could not mount: {e}")
+
 
 
 # =============================================================================

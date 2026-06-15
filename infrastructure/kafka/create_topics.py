@@ -1,4 +1,4 @@
-from .topics.registry import initialize_topics
+from infrastructure.kafka.topics.registry import initialize_topics
 
 created = initialize_topics()
 

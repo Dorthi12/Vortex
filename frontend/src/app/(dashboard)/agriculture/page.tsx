@@ -1,668 +1,994 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   Sprout, 
   TrendingUp, 
+  Gauge, 
+  Leaf, 
   Droplet, 
+  DollarSign, 
   AlertTriangle, 
+  Bug, 
+  Sparkles, 
+  Clock, 
   FileText, 
-  MapPin, 
+  ShieldAlert, 
+  MessageSquare, 
+  Bot, 
+  BarChart3, 
+  ClipboardList, 
   CloudSun, 
+  Calendar, 
+  Coins, 
+  Settings,
   ChevronRight,
-  TrendingDown,
-  Gauge,
-  Wheat,
-  LayoutGrid,
-  DollarSign,
-  Phone
+  Phone,
+  UserCheck,
+  CheckCircle2,
+  AlertOctagon,
+  X,
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUiStore } from '@/store/useUiStore';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { CallProfessionalModal } from '@/components/agriculture/CallProfessionalModal';
-import { CallProfessionalBanner } from '@/components/agriculture/CallProfessionalBanner';
 
-// Types for Farm Plots
-interface FarmPlot {
-  id: string;
+interface OfficialContact {
   name: string;
-  crop: string;
-  area: number; // Hectares
-  moisture: number; // %
-  ph: number;
-  irrigation: 'Drip' | 'Sprinkler' | 'Canal' | 'Rainfed';
-  coords: { x: number; y: number; width: number; height: number };
+  role: string;
+  phone: string;
+  type: 'Chief' | 'Lab Specialist' | 'Field Agent';
 }
 
-const MOCK_PLOTS: FarmPlot[] = [
-  { id: 'plot-1', name: 'North Sector A', crop: 'Sugarcane', area: 12.5, moisture: 72, ph: 6.8, irrigation: 'Drip', coords: { x: 5, y: 10, width: 42, height: 35 } },
-  { id: 'plot-2', name: 'North Sector B', crop: 'Rice (Paddy)', area: 8.2, moisture: 85, ph: 6.2, irrigation: 'Canal', coords: { x: 52, y: 10, width: 43, height: 35 } },
-  { id: 'plot-3', name: 'Central Sector A', crop: 'Cotton', area: 15.0, moisture: 48, ph: 7.2, irrigation: 'Sprinkler', coords: { x: 5, y: 50, width: 28, height: 40 } },
-  { id: 'plot-4', name: 'Central Sector B', crop: 'Wheat', area: 10.4, moisture: 64, ph: 6.5, irrigation: 'Drip', coords: { x: 37, y: 50, width: 28, height: 40 } },
-  { id: 'plot-5', name: 'South Sector', crop: 'Groundnuts', area: 6.8, moisture: 55, ph: 6.9, irrigation: 'Rainfed', coords: { x: 69, y: 50, width: 26, height: 40 } },
+interface FeatureItem {
+  name: string;
+  description: string;
+  href: string;
+  icon: React.ComponentType<any>;
+  status: 'Active' | 'AI Ready' | 'Monitoring' | 'Live' | 'Government Verified';
+  stat: string;
+  department: string;
+  primaryPhone: string;
+  officersCount: number;
+  contacts: OfficialContact[];
+  // Solid color tokens for bright mode & dark mode
+  colorClasses: {
+    lightBg: string;
+    darkBg: string;
+    lightBorder: string;
+    darkBorder: string;
+    accentColor: string;
+    badgeStyle: string;
+    badgeStyleDark: string;
+  };
+}
+
+const FEATURE_GRID_ITEMS: FeatureItem[] = [
+  { 
+    name: 'Crop Recommendation', 
+    description: 'Optimal crop matching based on NPK sensors and pH levels.', 
+    href: '/agriculture/recommendation', 
+    icon: Sprout, 
+    status: 'AI Ready', 
+    stat: '98% Model Accuracy',
+    department: 'Crop Yield & Planning',
+    primaryPhone: '+91 20 2560 4103',
+    officersCount: 18,
+    contacts: [
+      { name: 'Smt. Asha Deshmukh', role: 'Director of Agronomy', phone: '+91 20 2560 4103', type: 'Chief' },
+      { name: 'Shri Manoj Patil', role: 'Block Extension Officer', phone: '+91 20 2560 4123', type: 'Field Agent' },
+      { name: 'Dr. Sanjay Mehta', role: 'Crop Suitability Analyst', phone: '+91 20 2560 4143', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-emerald-50/90',
+      darkBg: 'dark:bg-[#071F15]',
+      lightBorder: 'border-emerald-300',
+      darkBorder: 'dark:border-emerald-500/30',
+      accentColor: 'text-emerald-700 dark:text-emerald-400',
+      badgeStyle: 'bg-emerald-200/80 text-emerald-800 border-emerald-300',
+      badgeStyleDark: 'dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+    }
+  },
+  { 
+    name: 'Yield Prediction', 
+    description: 'Forecast harvest volume outputs utilizing soil and climate variables.', 
+    href: '/agriculture/yield', 
+    icon: TrendingUp, 
+    status: 'Active', 
+    stat: '120K Predictions',
+    department: 'Crop Yield & Planning',
+    primaryPhone: '+91 20 2560 4103',
+    officersCount: 18,
+    contacts: [
+      { name: 'Smt. Asha Deshmukh', role: 'Director of Agronomy', phone: '+91 20 2560 4103', type: 'Chief' },
+      { name: 'Shri Rahul Joshi', role: 'Yield Forecasting Analyst', phone: '+91 20 2560 4113', type: 'Lab Specialist' },
+      { name: 'Shri Manoj Patil', role: 'Block Extension Officer', phone: '+91 20 2560 4123', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-blue-50/95',
+      darkBg: 'dark:bg-[#0B1530]',
+      lightBorder: 'border-blue-300',
+      darkBorder: 'dark:border-blue-500/30',
+      accentColor: 'text-blue-700 dark:text-blue-450',
+      badgeStyle: 'bg-blue-200/80 text-blue-800 border-blue-300',
+      badgeStyleDark: 'dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
+    }
+  },
+  { 
+    name: 'Soil Health Intelligence', 
+    description: 'Real-time soil grade, organic carbon and nutrient indexes.', 
+    href: '/agriculture/soil', 
+    icon: Gauge, 
+    status: 'Live', 
+    stat: '50K Farmers Assisted',
+    department: 'Soil & Fertilizers',
+    primaryPhone: '+91 20 2560 4102',
+    officersCount: 14,
+    contacts: [
+      { name: 'Dr. Ramesh Kurien', role: 'Chief Soil Scientist', phone: '+91 20 2560 4102', type: 'Chief' },
+      { name: 'Shri Sanjay Mehta', role: 'Soil Testing Lab Lead', phone: '+91 20 2560 4112', type: 'Lab Specialist' },
+      { name: 'Kumari Divya Nair', role: 'Soil Sample Field Inspector', phone: '+91 20 2560 4122', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-indigo-50/95',
+      darkBg: 'dark:bg-[#110e2e]',
+      lightBorder: 'border-indigo-300',
+      darkBorder: 'dark:border-indigo-500/30',
+      accentColor: 'text-indigo-700 dark:text-indigo-400',
+      badgeStyle: 'bg-indigo-200/80 text-indigo-800 border-indigo-300',
+      badgeStyleDark: 'dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20'
+    }
+  },
+  { 
+    name: 'Fertilizer Advisor', 
+    description: 'NPK mineral deficiency calculations and organic schedules.', 
+    href: '/agriculture/fertilizer', 
+    icon: Leaf, 
+    status: 'Government Verified', 
+    stat: 'Certified Dosages',
+    department: 'Soil & Fertilizers',
+    primaryPhone: '+91 20 2560 4102',
+    officersCount: 14,
+    contacts: [
+      { name: 'Dr. Ramesh Kurien', role: 'Chief Soil Scientist', phone: '+91 20 2560 4102', type: 'Chief' },
+      { name: 'Shri Sanjay Mehta', role: 'Soil Testing Lab Lead', phone: '+91 20 2560 4112', type: 'Lab Specialist' },
+      { name: 'Kumari Divya Nair', role: 'Soil Sample Field Inspector', phone: '+91 20 2560 4122', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-teal-50/95',
+      darkBg: 'dark:bg-[#051e24]',
+      lightBorder: 'border-teal-300',
+      darkBorder: 'dark:border-teal-500/30',
+      accentColor: 'text-teal-700 dark:text-teal-400',
+      badgeStyle: 'bg-teal-200/80 text-teal-850 border-teal-300',
+      badgeStyleDark: 'dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20'
+    }
+  },
+  // Row 2
+  { 
+    name: 'Irrigation Forecast', 
+    description: 'Weather-adjusted irrigation intervals to mitigate water stress.', 
+    href: '/agriculture/irrigation', 
+    icon: Droplet, 
+    status: 'Monitoring', 
+    stat: '14mm Rain Forecast',
+    department: 'Plant Protection',
+    primaryPhone: '+91 20 2560 4104',
+    officersCount: 22,
+    contacts: [
+      { name: 'Dr. Vikram Patil', role: 'Chief Entomologist', phone: '+91 20 2560 4104', type: 'Chief' },
+      { name: 'Shri Amit Kulkarni', role: 'Irrigation Inspector', phone: '+91 20 2560 4124', type: 'Field Agent' },
+      { name: 'Dr. Swati Sen', role: 'Plant Pathologist Expert', phone: '+91 20 2560 4114', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-cyan-55/95',
+      darkBg: 'dark:bg-[#031d30]',
+      lightBorder: 'border-cyan-300',
+      darkBorder: 'dark:border-cyan-500/30',
+      accentColor: 'text-cyan-750 dark:text-cyan-400',
+      badgeStyle: 'bg-cyan-200/80 text-cyan-850 border-cyan-300',
+      badgeStyleDark: 'dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20'
+    }
+  },
+  { 
+    name: 'Market Intelligence', 
+    description: 'Monitor wholesale Mandi pricing indexes and price trends.', 
+    href: '/agriculture/market', 
+    icon: DollarSign, 
+    status: 'Live', 
+    stat: 'Stable Price Corridor',
+    department: 'Markets & Credit',
+    primaryPhone: '+91 20 2560 4105',
+    officersCount: 11,
+    contacts: [
+      { name: 'Shri Anil Gokhale', role: 'Agricultural Commissioner', phone: '+91 20 2560 4105', type: 'Chief' },
+      { name: 'Shri Vinod Rane', role: 'Mandi Procurement Officer', phone: '+91 20 2560 4125', type: 'Field Agent' },
+      { name: 'Smt. Rekha Sharma', role: 'Credit Schemes Manager', phone: '+91 20 2560 4115', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-emerald-55/95',
+      darkBg: 'dark:bg-[#022016]',
+      lightBorder: 'border-emerald-300',
+      darkBorder: 'dark:border-emerald-500/30',
+      accentColor: 'text-emerald-750 dark:text-emerald-400',
+      badgeStyle: 'bg-emerald-200/80 text-emerald-900 border-emerald-300',
+      badgeStyleDark: 'dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+    }
+  },
+  { 
+    name: 'Disease Detection', 
+    description: 'Classify foliage pathogens using computer vision scanners.', 
+    href: '/agriculture/disease', 
+    icon: AlertTriangle, 
+    status: 'AI Ready', 
+    stat: '94% Classifier Match',
+    department: 'Plant Protection',
+    primaryPhone: '+91 20 2560 4104',
+    officersCount: 22,
+    contacts: [
+      { name: 'Dr. Vikram Patil', role: 'Chief Entomologist', phone: '+91 20 2560 4104', type: 'Chief' },
+      { name: 'Dr. Swati Sen', role: 'Plant Pathologist Expert', phone: '+91 20 2560 4114', type: 'Lab Specialist' },
+      { name: 'Shri Amit Kulkarni', role: 'Irrigation Inspector', phone: '+91 20 2560 4124', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-rose-50/95',
+      darkBg: 'dark:bg-[#2a080c]',
+      lightBorder: 'border-rose-300',
+      darkBorder: 'dark:border-red-500/30',
+      accentColor: 'text-red-700 dark:text-red-400',
+      badgeStyle: 'bg-rose-200/80 text-red-900 border-rose-300',
+      badgeStyleDark: 'dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
+    }
+  },
+  { 
+    name: 'Pest Detection', 
+    description: 'Identify insect infestation risks and IPM suppression plans.', 
+    href: '/agriculture/pests', 
+    icon: Bug, 
+    status: 'Active', 
+    stat: 'Pyrilla Risk Alert',
+    department: 'Plant Protection',
+    primaryPhone: '+91 20 2560 4104',
+    officersCount: 22,
+    contacts: [
+      { name: 'Dr. Vikram Patil', role: 'Chief Entomologist', phone: '+91 20 2560 4104', type: 'Chief' },
+      { name: 'Dr. Swati Sen', role: 'Plant Pathologist Expert', phone: '+91 20 2560 4114', type: 'Lab Specialist' },
+      { name: 'Shri Amit Kulkarni', role: 'Irrigation Inspector', phone: '+91 20 2560 4124', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-orange-50/95',
+      darkBg: 'dark:bg-[#2a1308]',
+      lightBorder: 'border-orange-300',
+      darkBorder: 'dark:border-orange-500/30',
+      accentColor: 'text-orange-700 dark:text-orange-400',
+      badgeStyle: 'bg-orange-200/80 text-orange-900 border-orange-300',
+      badgeStyleDark: 'dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+    }
+  },
+  // Row 3
+  { 
+    name: 'Nutrient Deficiency Detection', 
+    description: 'Identify leaf mineral deficiencies using spectral scans.', 
+    href: '/agriculture/nutrient', 
+    icon: Sparkles, 
+    status: 'AI Ready', 
+    stat: '92% Model Match',
+    department: 'Soil & Fertilizers',
+    primaryPhone: '+91 20 2560 4102',
+    officersCount: 14,
+    contacts: [
+      { name: 'Dr. Ramesh Kurien', role: 'Chief Soil Scientist', phone: '+91 20 2560 4102', type: 'Chief' },
+      { name: 'Shri Sanjay Mehta', role: 'Soil Testing Lab Lead', phone: '+91 20 2560 4112', type: 'Lab Specialist' },
+      { name: 'Kumari Divya Nair', role: 'Soil Sample Field Inspector', phone: '+91 20 2560 4122', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-violet-50/95',
+      darkBg: 'dark:bg-[#1a082a]',
+      lightBorder: 'border-violet-300',
+      darkBorder: 'dark:border-violet-500/30',
+      accentColor: 'text-violet-700 dark:text-violet-400',
+      badgeStyle: 'bg-violet-200/80 text-violet-900 border-violet-300',
+      badgeStyleDark: 'dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20'
+    }
+  },
+  { 
+    name: 'Growth Stage Detection', 
+    description: 'Detect crop phenology stage and estimated maturity calendars.', 
+    href: '/agriculture/growth-stage', 
+    icon: Clock, 
+    status: 'Monitoring', 
+    stat: 'Elongation Phase',
+    department: 'Crop Yield & Planning',
+    primaryPhone: '+91 20 2560 4103',
+    officersCount: 18,
+    contacts: [
+      { name: 'Smt. Asha Deshmukh', role: 'Director of Agronomy', phone: '+91 20 2560 4103', type: 'Chief' },
+      { name: 'Shri Rahul Joshi', role: 'Yield Forecasting Analyst', phone: '+91 20 2560 4113', type: 'Lab Specialist' },
+      { name: 'Shri Manoj Patil', role: 'Block Extension Officer', phone: '+91 20 2560 4123', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-sky-50/95',
+      darkBg: 'dark:bg-[#071d2b]',
+      lightBorder: 'border-sky-300',
+      darkBorder: 'dark:border-sky-500/30',
+      accentColor: 'text-sky-700 dark:text-sky-400',
+      badgeStyle: 'bg-sky-200/80 text-sky-900 border-sky-300',
+      badgeStyleDark: 'dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20'
+    }
+  },
+  { 
+    name: 'Subsidy Advisor', 
+    description: 'Welfare eligibility evaluations and custom hiring credits.', 
+    href: '/agriculture/subsidies', 
+    icon: FileText, 
+    status: 'Government Verified', 
+    stat: '₹45,000 Average Claim',
+    department: 'Markets & Credit',
+    primaryPhone: '+91 20 2560 4105',
+    officersCount: 11,
+    contacts: [
+      { name: 'Shri Anil Gokhale', role: 'Agricultural Commissioner', phone: '+91 20 2560 4105', type: 'Chief' },
+      { name: 'Smt. Rekha Sharma', role: 'Credit Schemes Manager', phone: '+91 20 2560 4115', type: 'Lab Specialist' },
+      { name: 'Shri Vinod Rane', role: 'Mandi Procurement Officer', phone: '+91 20 2560 4125', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-purple-50/95',
+      darkBg: 'dark:bg-[#1d0a2b]',
+      lightBorder: 'border-purple-300',
+      darkBorder: 'dark:border-purple-500/30',
+      accentColor: 'text-purple-700 dark:text-purple-400',
+      badgeStyle: 'bg-purple-200/80 text-purple-900 border-purple-300',
+      badgeStyleDark: 'dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20'
+    }
+  },
+  { 
+    name: 'Agricultural Risk Engine', 
+    description: 'Composite threat analysis of weather, pests and yields.', 
+    href: '/agriculture/risk', 
+    icon: ShieldAlert, 
+    status: 'Live', 
+    stat: '26/100 Low Risk',
+    department: 'Weather & Risk',
+    primaryPhone: '+91 20 2560 4106',
+    officersCount: 9,
+    contacts: [
+      { name: 'Smt. Priya Nair', role: 'Disaster Mitigation Lead', phone: '+91 20 2560 4106', type: 'Chief' },
+      { name: 'Kumari Ananya Sen', role: 'Insurance Claims Agent', phone: '+91 20 2560 4126', type: 'Field Agent' },
+      { name: 'Shri Devendra Singh', role: 'Meteorology Data Expert', phone: '+91 20 2560 4116', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-rose-50/95',
+      darkBg: 'dark:bg-[#2b0711]',
+      lightBorder: 'border-rose-300',
+      darkBorder: 'dark:border-rose-500/30',
+      accentColor: 'text-rose-700 dark:text-rose-400',
+      badgeStyle: 'bg-rose-200/80 text-rose-950 border-rose-300',
+      badgeStyleDark: 'dark:bg-rose-500/10 dark:text-rose-450 dark:border-rose-500/20'
+    }
+  },
+  // Row 4
+  { 
+    name: 'Farmer Assistant (RAG)', 
+    description: 'Text and voice chat advisor synced with agriculture manuals.', 
+    href: '/agriculture/assistant', 
+    icon: MessageSquare, 
+    status: 'AI Ready', 
+    stat: 'Instant Policy Search',
+    department: 'Support & Advisory',
+    primaryPhone: '+91 20 2560 4107',
+    officersCount: 15,
+    contacts: [
+      { name: 'Shri Rajesh Shinde', role: 'IT Support Lead', phone: '+91 20 2560 4107', type: 'Chief' },
+      { name: 'Shri Sunil Rao', role: 'Public Relations Officer', phone: '+91 20 2560 4127', type: 'Field Agent' },
+      { name: 'AI Bot Assistant Netra', role: '24/7 Virtual Assistant', phone: '+91 20 2560 4117', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-pink-50/95',
+      darkBg: 'dark:bg-[#2b0722]',
+      lightBorder: 'border-pink-300',
+      darkBorder: 'dark:border-pink-500/30',
+      accentColor: 'text-pink-700 dark:text-pink-400',
+      badgeStyle: 'bg-pink-200/80 text-pink-900 border-pink-300',
+      badgeStyleDark: 'dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20'
+    }
+  },
+  { 
+    name: 'Advisory Agent', 
+    description: 'Generate all-in-one compiled AI advisory dossiers.', 
+    href: '/agriculture/advisory', 
+    icon: Bot, 
+    status: 'AI Ready', 
+    stat: 'Dossier PDF Export',
+    department: 'Support & Advisory',
+    primaryPhone: '+91 20 2560 4107',
+    officersCount: 15,
+    contacts: [
+      { name: 'Shri Rajesh Shinde', role: 'IT Support Lead', phone: '+91 20 2560 4107', type: 'Chief' },
+      { name: 'Shri Sunil Rao', role: 'Public Relations Officer', phone: '+91 20 2560 4127', type: 'Field Agent' },
+      { name: 'AI Bot Assistant Netra', role: '24/7 Virtual Assistant', phone: '+91 20 2560 4117', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-fuchsia-50/95',
+      darkBg: 'dark:bg-[#24052a]',
+      lightBorder: 'border-fuchsia-300',
+      darkBorder: 'dark:border-fuchsia-500/30',
+      accentColor: 'text-fuchsia-700 dark:text-fuchsia-400',
+      badgeStyle: 'bg-fuchsia-200/80 text-fuchsia-900 border-fuchsia-300',
+      badgeStyleDark: 'dark:bg-fuchsia-500/10 dark:text-fuchsia-400 dark:border-fuchsia-500/20'
+    }
+  },
+  { 
+    name: 'Analytics', 
+    description: 'District adoption statistics, yield trends, and pathogen counts.', 
+    href: '/agriculture/analytics', 
+    icon: BarChart3, 
+    status: 'Live', 
+    stat: '5 Core SVG Reports',
+    department: 'Support & Advisory',
+    primaryPhone: '+91 20 2560 4107',
+    officersCount: 15,
+    contacts: [
+      { name: 'Shri Rajesh Shinde', role: 'IT Support Lead', phone: '+91 20 2560 4107', type: 'Chief' },
+      { name: 'Shri Sunil Rao', role: 'Public Relations Officer', phone: '+91 20 2560 4127', type: 'Field Agent' },
+      { name: 'AI Bot Assistant Netra', role: '24/7 Virtual Assistant', phone: '+91 20 2560 4117', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-lime-50/95',
+      darkBg: 'dark:bg-[#0f2405]',
+      lightBorder: 'border-lime-300',
+      darkBorder: 'dark:border-lime-500/25',
+      accentColor: 'text-lime-700 dark:text-lime-400',
+      badgeStyle: 'bg-lime-200/80 text-lime-900 border-lime-300',
+      badgeStyleDark: 'dark:bg-lime-500/10 dark:text-lime-400 dark:border-lime-500/20'
+    }
+  },
+  { 
+    name: 'Reports', 
+    description: 'Downloadable seasonal summaries and district telemetry logs.', 
+    href: '/agriculture/reports', 
+    icon: ClipboardList, 
+    status: 'Active', 
+    stat: 'PDF Compiler ready',
+    department: 'Support & Advisory',
+    primaryPhone: '+91 20 2560 4107',
+    officersCount: 15,
+    contacts: [
+      { name: 'Shri Rajesh Shinde', role: 'IT Support Lead', phone: '+91 20 2560 4107', type: 'Chief' },
+      { name: 'Shri Sunil Rao', role: 'Public Relations Officer', phone: '+91 20 2560 4127', type: 'Field Agent' },
+      { name: 'AI Bot Assistant Netra', role: '24/7 Virtual Assistant', phone: '+91 20 2560 4117', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-emerald-100/80',
+      darkBg: 'dark:bg-[#022005]',
+      lightBorder: 'border-emerald-300',
+      darkBorder: 'dark:border-emerald-500/25',
+      accentColor: 'text-emerald-700 dark:text-emerald-450',
+      badgeStyle: 'bg-emerald-200/90 text-emerald-950 border-emerald-300',
+      badgeStyleDark: 'dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+    }
+  },
+  // Row 5
+  { 
+    name: 'Weather Intelligence', 
+    description: 'Micro-climate monitoring, evaporation rates, and frost alarms.', 
+    href: '/agriculture/weather', 
+    icon: CloudSun, 
+    status: 'Monitoring', 
+    stat: 'Scattered Showers',
+    department: 'Weather & Risk',
+    primaryPhone: '+91 20 2560 4106',
+    officersCount: 9,
+    contacts: [
+      { name: 'Smt. Priya Nair', role: 'Disaster Mitigation Lead', phone: '+91 20 2560 4106', type: 'Chief' },
+      { name: 'Shri Devendra Singh', role: 'Meteorology Data Expert', phone: '+91 20 2560 4116', type: 'Lab Specialist' },
+      { name: 'Kumari Ananya Sen', role: 'Insurance Claims Agent', phone: '+91 20 2560 4126', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-amber-50/95',
+      darkBg: 'dark:bg-[#221c05]',
+      lightBorder: 'border-amber-300',
+      darkBorder: 'dark:border-amber-500/25',
+      accentColor: 'text-amber-705 dark:text-amber-400',
+      badgeStyle: 'bg-amber-200/80 text-amber-900 border-amber-300',
+      badgeStyleDark: 'dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+    }
+  },
+  { 
+    name: 'Harvest Window Prediction', 
+    description: 'Forecast the optimal dates to execute crop harvesting.', 
+    href: '/agriculture/harvest-window', 
+    icon: Calendar, 
+    status: 'AI Ready', 
+    stat: 'sucrose peak match',
+    department: 'Crop Yield & Planning',
+    primaryPhone: '+91 20 2560 4103',
+    officersCount: 18,
+    contacts: [
+      { name: 'Smt. Asha Deshmukh', role: 'Director of Agronomy', phone: '+91 20 2560 4103', type: 'Chief' },
+      { name: 'Shri Manoj Patil', role: 'Block Extension Officer', phone: '+91 20 2560 4123', type: 'Field Agent' },
+      { name: 'Dr. Sanjay Mehta', role: 'Crop Suitability Analyst', phone: '+91 20 2560 4143', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-orange-50/95',
+      darkBg: 'dark:bg-[#281205]',
+      lightBorder: 'border-orange-300',
+      darkBorder: 'dark:border-orange-500/25',
+      accentColor: 'text-orange-700 dark:text-orange-400',
+      badgeStyle: 'bg-orange-200/80 text-orange-950 border-orange-300',
+      badgeStyleDark: 'dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+    }
+  },
+  { 
+    name: 'Farmer Credit Risk', 
+    description: 'Evaluate crop loan caps and interest subsidy allocations.', 
+    href: '/agriculture/credit-risk', 
+    icon: Coins, 
+    status: 'Government Verified', 
+    stat: 'Low Risk rating',
+    department: 'Markets & Credit',
+    primaryPhone: '+91 20 2560 4105',
+    officersCount: 11,
+    contacts: [
+      { name: 'Shri Anil Gokhale', role: 'Agricultural Commissioner', phone: '+91 20 2560 4105', type: 'Chief' },
+      { name: 'Smt. Rekha Sharma', role: 'Credit Schemes Manager', phone: '+91 20 2560 4115', type: 'Lab Specialist' },
+      { name: 'Shri Vinod Rane', role: 'Mandi Procurement Officer', phone: '+91 20 2560 4125', type: 'Field Agent' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-emerald-50/95',
+      darkBg: 'dark:bg-[#022011]',
+      lightBorder: 'border-emerald-300',
+      darkBorder: 'dark:border-emerald-500/25',
+      accentColor: 'text-emerald-700 dark:text-emerald-400',
+      badgeStyle: 'bg-emerald-200/80 text-emerald-950 border-emerald-300',
+      badgeStyleDark: 'dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+    }
+  },
+  { 
+    name: 'Settings', 
+    description: 'Configure preferred languages, notification channels, and zones.', 
+    href: '/agriculture/settings', 
+    icon: Settings, 
+    status: 'Live', 
+    stat: '6 Languages',
+    department: 'Support & Advisory',
+    primaryPhone: '+91 20 2560 4107',
+    officersCount: 15,
+    contacts: [
+      { name: 'Shri Rajesh Shinde', role: 'IT Support Lead', phone: '+91 20 2560 4107', type: 'Chief' },
+      { name: 'Shri Sunil Rao', role: 'Public Relations Officer', phone: '+91 20 2560 4127', type: 'Field Agent' },
+      { name: 'AI Bot Assistant Netra', role: '24/7 Virtual Assistant', phone: '+91 20 2560 4117', type: 'Lab Specialist' }
+    ],
+    colorClasses: {
+      lightBg: 'bg-slate-100/90',
+      darkBg: 'dark:bg-[#1c222c]',
+      lightBorder: 'border-slate-300',
+      darkBorder: 'dark:border-slate-500/25',
+      accentColor: 'text-slate-700 dark:text-slate-450',
+      badgeStyle: 'bg-slate-200/85 text-slate-800 border-slate-300',
+      badgeStyleDark: 'dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20'
+    }
+  }
 ];
 
-export default function AgricultureOverview() {
-  const { setActiveTab } = useUiStore();
-  const [selectedPlot, setSelectedPlot] = useState<FarmPlot | null>(MOCK_PLOTS[0]);
-  const [activeTabSub, setActiveTabSub] = useState<'map' | 'weather'>('map');
-  const [isProfModalOpen, setIsProfModalOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<'soil_check' | 'pest_control' | 'subsidy_help' | 'market_advice' | 'general'>('general');
+export default function AgricultureLanding() {
+  // Call facility / complaint modal state
+  const [activeHotline, setActiveHotline] = useState<FeatureItem | null>(null);
 
-  // Sync sidebar active highlight
-  useEffect(() => {
-    setActiveTab('Agriculture');
-  }, [setActiveTab]);
+  const [complaintTitle, setComplaintTitle] = useState('');
+  const [complaintDesc, setComplaintDesc] = useState('');
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [callState, setCallState] = useState<'idle' | 'calling' | 'connected'>('idle');
+  const [activeCallNumber, setActiveCallNumber] = useState<string>('');
+  const [activeCallName, setActiveCallName] = useState<string>('');
+  const [complaintSubmitted, setComplaintSubmitted] = useState(false);
+
+  const handleOpenHotline = (e: React.MouseEvent, item: FeatureItem) => {
+    e.preventDefault(); // Prevent page redirect on link click
+    e.stopPropagation();
+    setActiveHotline(item);
+    setCallState('idle');
+    setShowComplaintForm(false);
+    setComplaintSubmitted(false);
+    setComplaintTitle('');
+    setComplaintDesc('');
+  };
+
+  const startHotlineCall = (number: string, name: string) => {
+    setActiveCallNumber(number);
+    setActiveCallName(name);
+    setCallState('calling');
+    setTimeout(() => {
+      setCallState('connected');
+    }, 1500);
+  };
+
+  const handleComplaintSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complaintTitle.trim() || !complaintDesc.trim()) return;
+    setComplaintSubmitted(true);
+    setTimeout(() => {
+      setShowComplaintForm(false);
+      setActiveHotline(null);
+    }, 2000);
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="space-y-8 min-h-screen bg-[#F8FAFC] dark:bg-[#070D1A] p-2 text-slate-900 dark:text-[#F8FAFC] transition-colors duration-300">
       
       {/* ========================================================================= */}
-      {/* 1. HEADER                                                                 */}
+      {/* 1. HERO SECTION                                                           */}
       {/* ========================================================================= */}
-      <div className="border-b border-border-subtle pb-5">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-sea-green animate-pulse" />
-          <span className="text-[10px] uppercase tracking-widest text-sea-green dark:text-sea-green-light font-black">
-            Agricultural Operations
-          </span>
-          <span className="text-slate-350 dark:text-slate-650">â€¢</span>
-          <span className="text-xs text-slate-500 font-semibold">Agro-Intelligence Core</span>
-        </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mt-1">
-          Agriculture Intelligence
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-          Real-time soil telemetry, predictive yield models, localized advisory logs, and mandi market indexing.
-        </p>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* CALL PROFESSIONAL â€” Quick Service Grid                                     */}
-      {/* ========================================================================= */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Phone className="w-4 h-4 text-sea-green" />
-          <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Call a Professional</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          {/* Soil & Crop */}
-          <button
-            onClick={() => { setSelectedService('soil_check'); setIsProfModalOpen(true); }}
-            className="group text-left p-5 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-emerald-700 via-emerald-800 to-green-900 border-2 border-emerald-500 shadow-lg shadow-emerald-900/40 hover:from-emerald-600 hover:via-emerald-700 hover:to-green-800 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-800/50"
-          >
-            <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center mb-4 group-hover:bg-white/25 transition-colors">
-              <Phone className="w-5 h-5 text-white" />
-            </div>
-            <h4 className="text-sm font-black text-white drop-shadow">Soil &amp; Crop Check</h4>
-            <p className="text-[11px] text-emerald-100 mt-1 leading-snug font-medium">In-person soil analysis &amp; yield audit</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-200 group-hover:text-white group-hover:gap-2 transition-all uppercase tracking-wide">
-              Book Visit <ChevronRight className="w-3 h-3" />
-            </span>
-          </button>
-
-          {/* Pest Control */}
-          <button
-            onClick={() => { setSelectedService('pest_control'); setIsProfModalOpen(true); }}
-            className="group text-left p-5 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-amber-600 via-orange-700 to-red-800 border-2 border-amber-500 shadow-lg shadow-amber-900/40 hover:from-amber-500 hover:via-orange-600 hover:to-red-700 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-800/50"
-          >
-            <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center mb-4 group-hover:bg-white/25 transition-colors">
-              <AlertTriangle className="w-5 h-5 text-white" />
-            </div>
-            <h4 className="text-sm font-black text-white drop-shadow">Pest Alert Response</h4>
-            <p className="text-[11px] text-amber-100 mt-1 leading-snug font-medium">IPM specialist for outbreak management</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-200 group-hover:text-white group-hover:gap-2 transition-all uppercase tracking-wide">
-              Call Specialist <ChevronRight className="w-3 h-3" />
-            </span>
-          </button>
-
-          {/* Subsidy */}
-          <button
-            onClick={() => { setSelectedService('subsidy_help'); setIsProfModalOpen(true); }}
-            className="group text-left p-5 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-indigo-600 via-violet-700 to-purple-800 border-2 border-indigo-500 shadow-lg shadow-indigo-900/40 hover:from-indigo-500 hover:via-violet-600 hover:to-purple-700 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-800/50"
-          >
-            <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center mb-4 group-hover:bg-white/25 transition-colors">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
-            <h4 className="text-sm font-black text-white drop-shadow">Subsidy Advisor</h4>
-            <p className="text-[11px] text-indigo-100 mt-1 leading-snug font-medium">Scheme eligibility &amp; application support</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-extrabold text-indigo-200 group-hover:text-white group-hover:gap-2 transition-all uppercase tracking-wide">
-              Get Guidance <ChevronRight className="w-3 h-3" />
-            </span>
-          </button>
-
-          {/* Market */}
-          <button
-            onClick={() => { setSelectedService('market_advice'); setIsProfModalOpen(true); }}
-            className="group text-left p-5 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-blue-600 via-sky-700 to-cyan-800 border-2 border-blue-500 shadow-lg shadow-blue-900/40 hover:from-blue-500 hover:via-sky-600 hover:to-cyan-700 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-800/50"
-          >
-            <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center mb-4 group-hover:bg-white/25 transition-colors">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <h4 className="text-sm font-black text-white drop-shadow">Market Counsel</h4>
-            <p className="text-[11px] text-blue-100 mt-1 leading-snug font-medium">APMC pricing &amp; selling strategy</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-200 group-hover:text-white group-hover:gap-2 transition-all uppercase tracking-wide">
-              Connect Now <ChevronRight className="w-3 h-3" />
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 2. KPI MATRIX (6 Cards)                                                   */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 dark:border-[#D4AF37]/20 p-6 md:p-8 bg-gradient-to-br from-emerald-500/5 via-white to-blue-500/5 dark:from-[#081F15] dark:via-[#0A1228] dark:to-[#0D1B2A] shadow-md transition-all">
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle, #059669 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+        />
         
-        {/* KPI 1: Cultivated Land */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-sea-green p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Cultivated Land</span>
-              <Sprout className="w-4 h-4 text-sea-green" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">52.9 Ha</h3>
+        <div className="relative z-10 max-w-4xl space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#1e3a8a] dark:text-[#D4AF37]">
+              Ministry of Agriculture Digital EOC
+            </span>
           </div>
-          <span className="text-[10px] font-semibold text-sea-green mt-2">5 active farm plots</span>
-        </Card>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            Agriculture Intelligence Department
+          </h1>
+          <p className="text-sm text-slate-700 dark:text-slate-400 leading-relaxed max-w-3xl font-black">
+            AI-powered crop planning, yield forecasting, soil diagnostics, disease monitoring, subsidy intelligence, market forecasting and agricultural decision support.
+          </p>
+        </div>
 
-        {/* KPI 2: Harvest Prediction */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-dark-green p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Harvest Forecast</span>
-              <Wheat className="w-4 h-4 text-dark-green" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">214.5 T</h3>
-          </div>
-          <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-500 mt-2">Avg yield: 4.05 Tons/Ha</span>
-        </Card>
-
-        {/* KPI 3: Recommend Match */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-sea-green p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Top Rec Crop</span>
-              <LayoutGrid className="w-4 h-4 text-sea-green" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-2 leading-none">Rice (Paddy)</h3>
-          </div>
-          <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-500 mt-2">94% Suitability score</span>
-        </Card>
-
-        {/* KPI 4: Pest Threat */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-warning p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Pest Threat</span>
-              <AlertTriangle className="w-4 h-4 text-warning" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">Moderate</h3>
-          </div>
-          <span className="text-[10px] font-bold text-warning mt-2">1 active warning (Aphids)</span>
-        </Card>
-
-        {/* KPI 5: Market Index */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-dark-green p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Mandi Index</span>
-              <DollarSign className="w-4 h-4 text-dark-green" />
-            </div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 mt-2 leading-none">â‚¹5,400/Q</h3>
-          </div>
-          <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-500 mt-2 flex items-center gap-0.5 text-success">
-            <TrendingUp className="w-3 h-3" /> +3.2% this week
-          </span>
-        </Card>
-
-        {/* KPI 6: Active Subsidies */}
-        <Card className="bg-card border-border-subtle shadow-xs border-l-4 border-l-sea-green p-4 flex flex-col justify-between min-h-[110px]">
-          <div>
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[10px] uppercase font-bold tracking-wider">Subsidies Open</span>
-              <FileText className="w-4 h-4 text-sea-green" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1">3 Schemes</h3>
-          </div>
-          <span className="text-[10px] font-semibold text-sea-green mt-2">Drip irrigation: 80% credit</span>
-        </Card>
-
+        {/* Animated KPI cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mt-8">
+          {[
+            { label: 'Farmers Assisted', val: '1.42 M+', sub: 'Active Registry' },
+            { label: 'Predictions Generated', val: '120 K', sub: 'Calculations run' },
+            { label: 'Disease Scans', val: '50 K', sub: 'Pathogens matched' },
+            { label: 'Active Advisories', val: '1,240', sub: 'Dispatched today' },
+            { label: 'Government Schemes', val: '3 Schemes', sub: 'Subsidies active' },
+            { label: 'Market Insights', val: 'Stable', sub: 'Mandi price corridor' }
+          ].map((kpi, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ y: -3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+              className="bg-white dark:bg-[#0B1530] p-4 rounded-xl border border-slate-200 dark:border-[#1A2744] shadow-sm flex flex-col justify-between min-h-[95px] transition-all"
+            >
+              <span className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-450">{kpi.label}</span>
+              <span className="text-lg font-black text-slate-900 dark:text-[#D4AF37] mt-1">{kpi.val}</span>
+              <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-black mt-1">{kpi.sub}</span>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. MIDDLE SECTION (SVG FARM MAPS vs WEATHER INTEL)                        */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Interactive Farm Map / Weather Card */}
-        <Card className="lg:col-span-2 bg-card border-border-subtle shadow-xs flex flex-col justify-between min-h-[390px]">
-          <CardHeader className="pb-3 border-b border-border-subtle bg-slate-50 dark:bg-slate-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-sm font-bold">Sector 4B Farm Intelligence Map</CardTitle>
-              <CardDescription className="text-[11px]">
-                Interactive parcel mapping detailing crop types, pH metrics, and moisture levels
-              </CardDescription>
-            </div>
-            
-            {/* View Mode Toggle Controls */}
-            <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shrink-0">
-              <button
-                onClick={() => setActiveTabSub('map')}
-                className={cn(
-                  'h-8 px-3 text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-all',
-                  activeTabSub === 'map' 
-                    ? 'bg-white dark:bg-slate-800 text-sea-green dark:text-white shadow-xs font-bold' 
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-                )}
-              >
-                Farm Map
-              </button>
-              <button
-                onClick={() => setActiveTabSub('weather')}
-                className={cn(
-                  'h-8 px-3 text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-all',
-                  activeTabSub === 'weather' 
-                    ? 'bg-white dark:bg-slate-800 text-sea-green dark:text-white shadow-xs font-bold' 
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-                )}
-              >
-                Weather Telemetry
-              </button>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="flex-1 relative bg-slate-50/50 dark:bg-slate-900/60 p-0 overflow-hidden flex items-center justify-center min-h-[300px]">
-            {activeTabSub === 'map' ? (
-              <div className="relative w-full h-full p-4 flex items-center justify-center">
-                {/* SVG Map Layout */}
-                <svg className="w-full max-w-[420px] aspect-square text-slate-200 dark:text-slate-800" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  {/* Grid background contour lines */}
-                  <defs>
-                    <pattern id="farmGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.25" />
-                    </pattern>
-                  </defs>
-                  <rect width="100" height="100" fill="url(#farmGrid)" opacity="0.3" />
-                  
-                  {/* Render Farm plots as clickable SVG shapes */}
-                  {MOCK_PLOTS.map((plot) => {
-                    const isSelected = selectedPlot?.id === plot.id;
-                    
-                    // Explicit styles to avoid CSS relative-color SVG rendering bugs
-                    const getPlotStyle = () => {
-                      if (isSelected) {
-                        return {
-                          fill: 'rgba(11, 74, 37, 0.45)', // dark-green selected background
-                          stroke: '#0B4A25', // dark-green border
-                          strokeWidth: '2.5px'
-                        };
-                      }
-                      
-                      // For Sugarcane and Wheat, style as dark green/black backdrop blocks as in user's image
-                      if (plot.crop === 'Sugarcane' || plot.crop === 'Wheat') {
-                        return {
-                          fill: '#0B4A25', // Dark green backdrop
-                          stroke: '#2E8B57', // Sea green border
-                          strokeWidth: '2px'
-                        };
-                      }
-
-                      // Rice (Paddy): light green block
-                      if (plot.moisture >= 80) {
-                        return {
-                          fill: 'rgba(16, 185, 129, 0.15)', // emerald-500/15
-                          stroke: '#10B981', // emerald-500
-                          strokeWidth: '2px'
-                        };
-                      }
-
-                      // Cotton, Groundnuts: light cream/amber block
-                      return {
-                        fill: 'rgba(245, 158, 11, 0.1)', // amber-500/10
-                        stroke: '#F59E0B', // amber-500
-                        strokeWidth: '2px'
-                      };
-                    };
-
-                    const getPlotTextColor = () => {
-                      // Sugarcane and Wheat are the dark backdrop blocks -> Text is vibrant crop yellow for excellent contrast!
-                      if (plot.crop === 'Sugarcane' || plot.crop === 'Wheat') {
-                        return '#EAB308'; // Bright yellow
-                      }
-                      // Rice: dark green text on light green background
-                      if (plot.moisture >= 80) {
-                        return '#064E3B'; 
-                      }
-                      // Cotton, Groundnuts: dark brown text on light cream background
-                      return '#78350F';
-                    };
-
-                    const style = getPlotStyle();
-                    const textColor = getPlotTextColor();
-
-                    return (
-                      <g key={plot.id} className="cursor-pointer" onClick={() => setSelectedPlot(plot)}>
-                        <rect
-                          x={plot.coords.x}
-                          y={plot.coords.y}
-                          width={plot.coords.width}
-                          height={plot.coords.height}
-                          rx="4"
-                          style={{
-                            fill: style.fill,
-                            stroke: style.stroke,
-                            strokeWidth: style.strokeWidth,
-                          }}
-                          className="transition-all duration-200 hover:brightness-105"
-                        />
-                        <text
-                          x={plot.coords.x + plot.coords.width / 2}
-                          y={plot.coords.y + plot.coords.height / 2}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="3.4"
-                          style={{ fill: textColor }}
-                          className="font-black pointer-events-none uppercase tracking-wide"
-                        >
-                          {plot.crop}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-
-                {/* Map legend overlay */}
-                <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 px-2.5 py-1.5 rounded-lg text-[9px] font-bold border border-border-subtle flex flex-col gap-1 text-slate-500 shadow-md">
-                  <span className="text-slate-800 dark:text-slate-200 border-b border-border-subtle pb-0.5 mb-0.5 font-extrabold uppercase">Soil Moisture</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-600" /> High (&gt;80%)</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sea-green" /> Optimal (60-80%)</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Dry (&lt;60%)</span>
-                </div>
-              </div>
-            ) : (
-              // Weather Intelligence panel
-              <div className="w-full p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Weather dials */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3.5 bg-white dark:bg-slate-950 p-3.5 rounded-lg border border-border-subtle shadow-2xs">
-                    <div className="h-10 w-10 rounded-full bg-sea-green/10 flex items-center justify-center shrink-0 text-sea-green">
-                      <CloudSun className="w-5.5 h-5.5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-bold">Temperature & Sky</span>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">28.5Â°C â€¢ Partial Cloud</h4>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3.5 bg-white dark:bg-slate-950 p-3.5 rounded-lg border border-border-subtle shadow-2xs">
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-500">
-                      <Droplet className="w-5.5 h-5.5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-bold">Humidity Level</span>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">74% Atmospheric Moisture</h4>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rain forecast & advice */}
-                <div className="bg-white dark:bg-slate-950 p-4 rounded-lg border border-border-subtle flex flex-col justify-between shadow-2xs">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sea-green animate-pulse" />
-                      <span className="text-[9px] uppercase font-bold text-sea-green">IMD Crop Advisory</span>
-                    </div>
-                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed">
-                      Drizzling showers forecasted starting at 2 PM. Farmers are advised to delay chemical fertilizer sprays and suspend active micro-irrigation cycles for the next 24 hours.
-                    </p>
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-bold border-t border-slate-100 dark:border-slate-900 pt-2.5 mt-4">
-                    Precipitation probability: 82%
-                  </div>
-                </div>
-
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Selected plot inspect drawer */}
-        <Card className="bg-card border-border-subtle shadow-xs flex flex-col justify-between min-h-[390px]">
-          <CardHeader className="pb-3 border-b border-border-subtle">
-            <CardTitle>Plot Inspect Panel</CardTitle>
-            <CardDescription>Click a farm map sector to inspect soil indices</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 p-5 flex flex-col justify-between">
-            {selectedPlot ? (
-              <div className="space-y-4 h-full flex flex-col justify-between">
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-slate-400">{selectedPlot.id}</span>
-                    <span className={cn(
-                      'text-[10px] font-bold px-2 py-0.5 rounded-full border',
-                      selectedPlot.moisture >= 60 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400' 
-                        : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400'
-                    )}>
-                      {selectedPlot.moisture >= 60 ? 'Healthy Moisture' : 'Dry Alert'}
-                    </span>
-                  </div>
-
-                  <h4 className="text-base font-black text-slate-900 dark:text-slate-100 leading-snug">{selectedPlot.name}</h4>
-                  
-                  <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
-                    <div className="flex justify-between items-center text-slate-500">
-                      <span>Cultivated Crop:</span>
-                      <strong className="text-slate-900 dark:text-slate-100 font-bold">{selectedPlot.crop}</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-500">
-                      <span>Sector Size:</span>
-                      <strong className="text-slate-900 dark:text-slate-100 font-bold">{selectedPlot.area} Hectares</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-500">
-                      <span>Soil pH rating:</span>
-                      <strong className="text-slate-900 dark:text-slate-100 font-bold">{selectedPlot.ph} pH</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-500">
-                      <span>Soil Moisture:</span>
-                      <strong className="text-slate-900 dark:text-slate-100 font-bold">{selectedPlot.moisture}%</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-500">
-                      <span>Irrigation Delivery:</span>
-                      <strong className="text-slate-900 dark:text-slate-100 font-bold">{selectedPlot.irrigation}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <Link href="/agriculture/yield" passHref className="block">
-                    <Button variant="outline" size="sm" className="w-full flex items-center justify-center gap-1 text-[11px] py-1.5 h-9 cursor-pointer">
-                      Simulate Yield Prediction
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
-                  <Button 
-                    onClick={() => {
-                      setSelectedService('soil_check');
-                      setIsProfModalOpen(true);
-                    }}
-                    className="w-full bg-sea-green hover:bg-dark-green text-white flex items-center justify-center gap-1.5 text-[11px] py-1.5 h-9 cursor-pointer"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    Call Professional for Soil Check
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center text-xs text-slate-450 py-10">
-                <Sprout className="w-8 h-8 text-slate-300 mb-2 animate-bounce" />
-                Select a plot coordinate on the locator map to inspect detail variables.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 4. NAVIGATION MODULES SHORTCUT GRID (6 Cards)                             */}
+      {/* 2. QUICK ACCESS ACTION TOOLBAR                                            */}
       {/* ========================================================================= */}
       <div className="space-y-3">
-        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Agricultural Command Core Modules</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-          {/* Module 1: Crop Yield â€” Emerald */}
-          <Link href="/agriculture/yield" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-emerald-500 bg-gradient-to-br from-card to-emerald-950/10 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10 hover:from-emerald-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0 group-hover:bg-emerald-500/30 transition-colors">
-                    <Wheat className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-emerald-400 transition-colors">
-                    Crop Yield Prediction
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  Calculate expected seasonal harvest outputs (Tons) based on farm area size, region temperature, average rainfall and pH scales.
-                </p>
-              </div>
-              <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Access Simulator <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-655 dark:text-slate-400">Quick Access Tools</h3>
+        <div className="flex flex-wrap gap-2.5">
+          <Link href="/agriculture/recommendation">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Recommend Crop
+            </Button>
           </Link>
-
-          {/* Module 2: Crop Recommendation â€” Teal */}
-          <Link href="/agriculture/recommendation" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-teal-500 bg-gradient-to-br from-card to-teal-950/10 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/10 hover:from-teal-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-teal-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 group-hover:bg-teal-500/30 transition-colors">
-                    <LayoutGrid className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-teal-400 transition-colors">
-                    Crop Recommendation
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  Determine optimal crops for planting based on soil nutrient measurements (Nitrogen, Phosphorus, Potassium) and moisture profiles.
-                </p>
-              </div>
-              <span className="text-[10px] text-teal-400 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Match Crops <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+          <Link href="/agriculture/yield">
+            <Button size="sm" className="bg-[#1e3a8a] dark:bg-[#1C39BB] hover:bg-blue-800 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Predict Yield
+            </Button>
           </Link>
-
-          {/* Module 3: Fertilizer Advisor â€” Lime */}
-          <Link href="/agriculture/fertilizer" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-lime-500 bg-gradient-to-br from-card to-lime-950/10 hover:border-lime-400 hover:shadow-lg hover:shadow-lime-500/10 hover:from-lime-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-lime-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-lime-500/15 border border-lime-500/30 flex items-center justify-center text-lime-400 shrink-0 group-hover:bg-lime-500/30 transition-colors">
-                    <Droplet className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-lime-400 transition-colors">
-                    Fertilizer Advisor
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  Input target crops and check current soil deficits to calculate Urea, DAP, and MOP dosages with composting guidelines.
-                </p>
-              </div>
-              <span className="text-[10px] text-lime-400 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Analyze Soil <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+          <Link href="/agriculture/disease">
+            <Button size="sm" className="bg-red-650 hover:bg-red-700 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Scan Disease
+            </Button>
           </Link>
-
-          {/* Module 4: Market Intelligence â€” Blue */}
-          <Link href="/agriculture/market" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-950/10 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10 hover:from-blue-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-blue-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 group-hover:bg-blue-500/30 transition-colors">
-                    <DollarSign className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-400 transition-colors">
-                    Market Intelligence
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  Monitor live wholesale Mandi trading prices, compare regional crop valuations, and view 6-month historical indices.
-                </p>
-              </div>
-              <span className="text-[10px] text-blue-400 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Check Mandi Prices <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+          <Link href="/agriculture/pests">
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Detect Pest
+            </Button>
           </Link>
-
-          {/* Module 5: Pest Alerts â€” Amber */}
-          <Link href="/agriculture/pests" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-950/10 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10 hover:from-amber-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 group-hover:bg-amber-500/30 transition-colors">
-                    <AlertTriangle className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-amber-400 transition-colors">
-                    Pest Alerts
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  View localized biological infestation warning ratings, inspect outbreak hotspots, and access chemical treatment plans.
-                </p>
-              </div>
-              <span className="text-[10px] text-amber-400 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Monitor Warnings <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+          <Link href="/agriculture/subsidies">
+            <Button size="sm" className="bg-purple-650 hover:bg-purple-700 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Check Subsidies
+            </Button>
           </Link>
-
-          {/* Module 6: Subsidy Advisor â€” Violet */}
-          <Link href="/agriculture/subsidies" className="block group">
-            <Card className="relative overflow-hidden p-5 border-border-subtle shadow-xs flex flex-col justify-between min-h-[150px] cursor-pointer transition-all duration-200 border-l-4 border-l-violet-500 bg-gradient-to-br from-card to-violet-950/10 hover:border-violet-400 hover:shadow-lg hover:shadow-violet-500/10 hover:from-violet-950/25 active:scale-[0.98]">
-              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 shrink-0 group-hover:bg-violet-500/30 transition-colors">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 group-hover:text-violet-400 transition-colors">
-                    Subsidy Advisor
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-500 leading-normal">
-                  Review open agricultural welfare schemes, check farming eligibility thresholds, and simulate application validation checks.
-                </p>
-              </div>
-              <span className="text-[10px] text-violet-400 font-bold flex items-center gap-0.5 mt-4 self-end group-hover:gap-1.5 transition-all">
-                Check Schemes <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Card>
+          <Link href="/agriculture/market">
+            <Button size="sm" className="bg-emerald-650 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Market Forecast
+            </Button>
           </Link>
-
+          <Link href="/agriculture/assistant">
+            <Button size="sm" className="bg-[#D4AF37] hover:bg-yellow-600 text-slate-900 font-bold text-xs py-2 px-3.5 h-9 cursor-pointer shadow-sm active:scale-95 transition-all">
+              Ask Agriculture AI
+            </Button>
+          </Link>
         </div>
       </div>
 
-      <CallProfessionalModal 
-        isOpen={isProfModalOpen} 
-        onClose={() => setIsProfModalOpen(false)} 
-        defaultService={selectedService} 
-      />
+      {/* ========================================================================= */}
+      {/* 3. 20 FEATURE GRID SECTION                                                */}
+      {/* ========================================================================= */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-655 dark:text-slate-400">Agriculture AI capabilities</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {FEATURE_GRID_ITEMS.map((item, idx) => {
+            const Icon = item.icon;
+            
+            return (
+              <Link href={item.href} key={item.name} className="block group">
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.02 }}
+                  whileHover={{ 
+                    y: -5, 
+                    boxShadow: '0 12px 30px -10px rgba(0, 0, 0, 0.1)',
+                  }}
+                  className={cn(
+                    "h-full rounded-2xl p-5 flex flex-col justify-between min-h-[250px] transition-all relative overflow-hidden shadow-sm border",
+                    item.colorClasses.lightBg,
+                    item.colorClasses.darkBg,
+                    item.colorClasses.lightBorder,
+                    item.colorClasses.darkBorder
+                  )}
+                >
+                  {/* Top color indicator border */}
+                  <div className="absolute inset-x-0 top-0 h-1.5 bg-slate-900/10 dark:bg-white/10" />
+                  
+                  <div className="space-y-3.5">
+                    {/* Icon + Status badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-white dark:bg-[#070D1A] border border-slate-350 dark:border-emerald-500/20 flex items-center justify-center text-slate-900 dark:text-[#D4AF37] shrink-0 group-hover:bg-white dark:group-hover:bg-slate-800 transition-all shadow-sm">
+                        <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      </div>
+                      
+                      <span className={cn('text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border shrink-0 shadow-2xs', item.colorClasses.badgeStyle, item.colorClasses.badgeStyleDark)}>
+                        {item.status}
+                      </span>
+                    </div>
 
+                    <div className="space-y-1">
+                      <h4 className="text-base font-black text-slate-950 dark:text-slate-100 group-hover:text-slate-800 dark:group-hover:text-[#D4AF37] transition-colors leading-snug">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs text-slate-900 dark:text-slate-300 leading-relaxed font-black">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer metadata with Call Escalation Button */}
+                  <div className="border-t border-slate-300 dark:border-[#1A2744] pt-3.5 mt-4 flex flex-col gap-2">
+                    {/* Primary Department & Phone Display */}
+                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-900 dark:text-slate-400 bg-white/50 dark:bg-black/10 px-2 py-1 rounded border border-slate-200 dark:border-slate-800">
+                      <span className="truncate max-w-[110px]">{item.department}</span>
+                      <span className="font-mono text-slate-950 dark:text-white">{item.primaryPhone}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black text-slate-950 dark:text-slate-400 italic block truncate max-w-[120px]">
+                        {item.stat}
+                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Calling facility trigger */}
+                        <button
+                          onClick={(e) => handleOpenHotline(e, item)}
+                          className="p-1.5 rounded-lg border border-slate-300 dark:border-emerald-500/25 hover:border-slate-500 bg-white dark:bg-emerald-950/20 text-slate-900 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-emerald-500/10 transition-colors shadow-xs cursor-pointer flex items-center gap-1 font-bold text-[9px]"
+                          title="Call Escalation Options / Submit Complaint"
+                        >
+                          <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          Call Office
+                        </button>
+
+                        <span className="text-[10px] font-black text-slate-900 dark:text-[#D4AF37] flex items-center gap-0.5 group-hover:gap-1.5 transition-all uppercase tracking-wide">
+                          Open
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. DIALER & COMPLAINT DIRECTORY MODAL                                      */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {activeHotline && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveHotline(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs"
+            />
+            
+            {/* Modal Content */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-[#0A1228] border border-slate-300 dark:border-[#1A2744] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative z-10 p-6 text-slate-950 dark:text-slate-200"
+            >
+              <button 
+                onClick={() => setActiveHotline(null)}
+                className="absolute top-4 right-4 text-slate-500 hover:text-slate-950 dark:hover:text-white p-1 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-5">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 tracking-wider">
+                    {activeHotline.department} • Direct Directory
+                  </span>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white mt-1">
+                    Hotline Contact Options
+                  </h3>
+                  <p className="text-xs text-slate-700 dark:text-slate-400 mt-1 leading-relaxed font-bold">
+                    Select a contact option below to call or escalate issues regarding <b>{activeHotline.name}</b>.
+                  </p>
+                </div>
+
+                {/* Simulated Dialer */}
+                {callState !== 'idle' ? (
+                  <div className="p-6 rounded-xl bg-slate-950 text-white text-center space-y-4 shadow-inner">
+                    <div className="relative w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 animate-pulse">
+                      <Phone className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                        {callState === 'calling' ? 'CONNECTING HOTLINE...' : 'CONNECTED VIA VOIP'}
+                      </span>
+                      <h4 className="text-lg font-bold mt-1 text-[#D4AF37] font-mono">{activeCallNumber}</h4>
+                      <p className="text-[10px] text-slate-450 mt-1">Connecting to <b>{activeCallName}</b>...</p>
+                    </div>
+                    <Button 
+                      onClick={() => setCallState('idle')}
+                      className="bg-red-600 hover:bg-red-750 text-white font-bold text-xs px-5 py-1.5 h-8 mt-2 mx-auto cursor-pointer active:scale-95 transition-all"
+                    >
+                      Disconnect Call
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Contacts options list */}
+                    {!showComplaintForm && (
+                      <div className="space-y-3.5">
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
+                          Select Available Contacts to Refer to for Help:
+                        </span>
+                        
+                        <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1">
+                          {activeHotline.contacts.map((contact, idx) => (
+                            <div 
+                              key={idx}
+                              className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between gap-3 hover:border-slate-400 dark:hover:border-emerald-500/30 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-full bg-slate-100 dark:bg-emerald-950/30 flex items-center justify-center border border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-400 shrink-0">
+                                  {contact.type === 'Chief' ? <ShieldCheck className="w-4.5 h-4.5 text-amber-500" /> : <User className="w-4.5 h-4.5" />}
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-black text-slate-955 dark:text-white leading-tight">
+                                    {contact.name}
+                                  </h4>
+                                  <span className="text-[9px] text-slate-605 dark:text-slate-450 block font-semibold">
+                                    {contact.role} • <span className="font-mono">{contact.phone}</span>
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => startHotlineCall(contact.phone, contact.name)}
+                                className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                              >
+                                <Phone className="w-3 h-3" />
+                                Call
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-150 dark:border-slate-850 flex items-center justify-between">
+                          <span className="text-[10px] text-slate-500 font-bold">
+                            Total officers on call duty: <b>{activeHotline.officersCount}</b>
+                          </span>
+                          <button
+                            onClick={() => setShowComplaintForm(true)}
+                            className="text-[10px] font-black text-red-650 hover:text-red-750 flex items-center gap-1 cursor-pointer"
+                          >
+                            <AlertOctagon className="w-3.5 h-3.5" /> File Official Complaint
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Complaint form */}
+                {showComplaintForm && !complaintSubmitted && (
+                  <form onSubmit={handleComplaintSubmit} className="space-y-4 border-t border-slate-150 dark:border-slate-850 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                        Complaint Title
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={complaintTitle}
+                        onChange={e => setComplaintTitle(e.target.value)}
+                        className="w-full h-9 px-3 text-xs rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-bold"
+                        placeholder="e.g. Inaccurate soil moisture reading in ward 4"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                        Complaint Details / Description
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={complaintDesc}
+                        onChange={e => setComplaintDesc(e.target.value)}
+                        className="w-full p-3 text-xs rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-bold"
+                        placeholder="Describe the issue in detail to assist the duty officers..."
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setShowComplaintForm(false)}
+                        className="text-xs h-9 cursor-pointer"
+                      >
+                        Back to Directory
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 cursor-pointer"
+                      >
+                        Submit Complaint
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Complaint Submission Success */}
+                {complaintSubmitted && (
+                  <div className="p-6 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center space-y-3 animate-in zoom-in-95 duration-200">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-450">Complaint Logged Successfully</h4>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-semibold">
+                        Ticket assigned to central queue. Dispatching to duty officers on standby.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
     </div>
   );
 }

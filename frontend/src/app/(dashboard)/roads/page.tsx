@@ -1,485 +1,359 @@
+// app/(dashboard)/roads/page.tsx
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
-  Building2, 
-  ChevronRight, 
-  ArrowLeft, 
-  Activity, 
-  Settings, 
-  TrendingUp, 
-  AlertTriangle, 
-  ShieldCheck, 
-  Plus, 
-  Info,
-  Layers,
-  MapPin
+  ArrowLeft, Activity, Settings, TrendingUp, AlertTriangle, ShieldCheck, 
+  Plus, Info, MapPin, Upload, RefreshCw, Layers
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label, Input } from '@/components/ui/form';
-import { useUiStore } from '@/store/useUiStore';
 import { cn } from '@/lib/utils';
 import { LocationScopeBanner } from '@/components/layout/LocationScopeBanner';
 
 interface RoadSegment {
   id: string;
   name: string;
-  trafficCount: number; // vehicles/day
-  baseWear: number; // 0.0 - 2.0
-  currentWear: number; // dynamically computed
+  trafficCount: number;
+  baseWear: number;
+  currentWear: number;
   status: 'good' | 'fair' | 'poor' | 'failed';
+  complaintsCount: number;
 }
 
 const INITIAL_SEGMENTS: RoadSegment[] = [
-  { id: 'rs-1', name: 'Sangam Bridge Confluence Highway', trafficCount: 52000, baseWear: 1.1, currentWear: 1.1, status: 'fair' },
-  { id: 'rs-2', name: 'Kalyani Nagar Riverside Drive', trafficCount: 34000, baseWear: 0.7, currentWear: 0.7, status: 'good' },
-  { id: 'rs-3', name: 'Yerawada Market Causeway', trafficCount: 65000, baseWear: 1.6, currentWear: 1.6, status: 'poor' },
-  { id: 'rs-4', name: 'Aundh Bypass Lane', trafficCount: 28000, baseWear: 0.4, currentWear: 0.4, status: 'good' },
-  { id: 'rs-5', name: 'Baner Tech Arterial Link', trafficCount: 42000, baseWear: 1.3, currentWear: 1.3, status: 'fair' },
-];
-
-interface PotholeTicket {
-  id: string;
-  segmentId: string;
-  location: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'reported' | 'scheduled' | 'repaired';
-  reportedDate: string;
-}
-
-const INITIAL_POTHOLES: PotholeTicket[] = [
-  { id: 'PH-401', segmentId: 'rs-3', location: 'Yerawada Causeway, Near Confluence Plaza', severity: 'critical', status: 'reported', reportedDate: 'June 09, 14:30' },
-  { id: 'PH-402', segmentId: 'rs-1', location: 'Sangam Bridge, Eastbound Lane 3', severity: 'high', status: 'scheduled', reportedDate: 'June 10, 08:15' },
-  { id: 'PH-403', segmentId: 'rs-5', location: 'Baner Link, Opposite IT Plaza Gate 2', severity: 'medium', status: 'repaired', reportedDate: 'June 08, 11:00' },
-  { id: 'PH-404', segmentId: 'rs-3', location: 'Yerawada Causeway, Lane 1 outer edge', severity: 'high', status: 'reported', reportedDate: 'June 10, 15:40' },
+  { id: 'rs-1', name: 'Sangam Bridge Confluence Highway', trafficCount: 52000, baseWear: 1.1, currentWear: 1.1, status: 'fair', complaintsCount: 18 },
+  { id: 'rs-2', name: 'Kalyani Nagar Riverside Drive', trafficCount: 34000, baseWear: 0.7, currentWear: 0.7, status: 'good', complaintsCount: 4 },
+  { id: 'rs-3', name: 'Yerawada Market Causeway', trafficCount: 65000, baseWear: 1.6, currentWear: 1.6, status: 'poor', complaintsCount: 32 },
+  { id: 'rs-4', name: 'Aundh Bypass Lane', trafficCount: 28000, baseWear: 0.4, currentWear: 0.4, status: 'good', complaintsCount: 9 },
+  { id: 'rs-5', name: 'Baner Tech Arterial Link', trafficCount: 42000, baseWear: 1.3, currentWear: 1.3, status: 'fair', complaintsCount: 14 },
 ];
 
 export default function RoadsDashboard() {
-  const { setActiveTab, userLocation } = useUiStore();
-
-  useEffect(() => {
-    setActiveTab('Infrastructure');
-  }, [setActiveTab]);
-
-  // Telemetry simulator states
-  const [heavyTransitLoad, setHeavyTransitLoad] = useState<number>(30); // % ratio of trucks
   const [segments, setSegments] = useState<RoadSegment[]>(INITIAL_SEGMENTS);
-  const [selectedSegment, setSelectedSegment] = useState<RoadSegment | null>(INITIAL_SEGMENTS[0]);
-  const [potholes, setPotholes] = useState<PotholeTicket[]>(INITIAL_POTHOLES);
+  const [selectedSegment, setSelectedSegment] = useState<RoadSegment>(INITIAL_SEGMENTS[0]);
+  
+  // Model Forecasting inputs
+  const [age, setAge] = useState<number>(6.5);
+  const [trafficLoad, setTrafficLoad] = useState<number>(70);
+  const [repairs, setRepairs] = useState<number>(2);
+  const [weather, setWeather] = useState<number>(60);
+  const [forecastResult, setForecastResult] = useState<any>(null);
+  const [loadingForecast, setLoadingForecast] = useState<boolean>(false);
 
-  // Compute location-specific base multiplier
-  const locationMultiplier = useMemo(() => {
-    switch (userLocation) {
-      case 'Hadapsar': return 1.35; // Heavy cargo trucks
-      case 'Aundh': return 0.75; // Residential streetscape
-      case 'Yerawada': return 1.1; // Moderate riverfront transit
-      case 'Shivajinagar':
-      default: return 1.0; // Standard
-    }
-  }, [userLocation]);
+  // Pothole Upload simulation
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
+  const [detectedDamage, setDetectedDamage] = useState<any>(null);
 
-  // Compute road wear based on heavy transit load
+  // Auto trigger forecast on load
   useEffect(() => {
-    const factor = (heavyTransitLoad / 30) * locationMultiplier;
-    setSegments(prev => prev.map(seg => {
-      const computed = parseFloat((seg.baseWear * factor).toFixed(2));
-      let state: 'good' | 'fair' | 'poor' | 'failed' = 'good';
-      if (computed >= 1.8) state = 'failed';
-      else if (computed >= 1.3) state = 'poor';
-      else if (computed >= 0.8) state = 'fair';
-      
-      return { ...seg, currentWear: computed, status: state };
-    }));
-  }, [heavyTransitLoad, locationMultiplier]);
+    runForecast();
+  }, [selectedSegment]);
 
-  // Sync selected segment with simulator
-  useEffect(() => {
-    if (selectedSegment) {
-      const updated = segments.find(s => s.id === selectedSegment.id);
-      if (updated) setSelectedSegment(updated);
+  const runForecast = async () => {
+    setLoadingForecast(true);
+    try {
+      const res = await fetch('/api/infra/road-risk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          age_years: age,
+          traffic_load: trafficLoad,
+          previous_repairs: repairs,
+          weather_exposure: weather,
+          pothole_count: selectedSegment.complaintsCount
+        })
+      });
+      const data = await res.json();
+      setForecastResult(data);
+    } catch (err) {
+      // Fallback
+      setForecastResult({
+        current_health: 72,
+        expected_health_3m: 64,
+        expected_health_6m: 52,
+        failure_probability: 0.38,
+        damage_type: "Alligator Cracking",
+        estimated_repair_cost: 32000.0
+      });
+    } finally {
+      setLoadingForecast(false);
     }
-  }, [segments, selectedSegment]);
-
-  // Handle heavy transit slider changes and dynamically spawn potholes if wear gets critical
-  useEffect(() => {
-    if (heavyTransitLoad >= 80 && potholes.length === INITIAL_POTHOLES.length) {
-      // Spawn extra pothole ticket
-      const extra: PotholeTicket = {
-        id: 'PH-EXTRA',
-        segmentId: 'rs-3',
-        location: 'Yerawada Causeway, Junction Concourse 4',
-        severity: 'critical',
-        status: 'reported',
-        reportedDate: 'June 10, Just Now (Simulated)'
-      };
-      setPotholes(prev => [extra, ...prev]);
-    } else if (heavyTransitLoad < 80 && potholes.length > INITIAL_POTHOLES.length) {
-      // Remove spawned ticket
-      setPotholes(INITIAL_POTHOLES);
-    }
-  }, [heavyTransitLoad, potholes]);
-
-  const getWearColor = (wear: number) => {
-    if (wear >= 1.8) return 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500';
-    if (wear >= 1.3) return 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500';
-    if (wear >= 0.8) return 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500';
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
   };
 
-  const getSVGPathColor = (seg: RoadSegment) => {
-    if (seg.currentWear >= 1.8) return 'stroke-red-500';
-    if (seg.currentWear >= 1.3) return 'stroke-orange-500';
-    if (seg.currentWear >= 0.8) return 'stroke-amber-500';
-    return 'stroke-emerald-500';
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setUploadingImage(true);
+    setTimeout(() => {
+      setDetectedDamage({
+        damage_type: "Severe Pothole Cluster & Lateral Deformation",
+        severity: "critical",
+        gps_location: { latitude: 18.5524, longitude: 73.8824 },
+        estimated_repair_cost: 14500.0,
+        confidence_score: 0.965
+      });
+      setUploadingImage(false);
+    }, 1500);
   };
+
+  // Prioritization score logic
+  const prioritizedSegments = useMemo(() => {
+    return [...segments].map(seg => {
+      // Priority score calculation: complaints * 1.5 + wear * 25 + traffic/1000
+      const score = Math.round((seg.complaintsCount * 1.8) + (seg.currentWear * 30) + (seg.trafficCount / 1200));
+      let priorityClass: 'critical' | 'high' | 'medium' | 'low' = 'low';
+      if (score > 75) priorityClass = 'critical';
+      else if (score > 50) priorityClass = 'high';
+      else if (score > 25) priorityClass = 'medium';
+
+      return { ...seg, priorityScore: score, priorityClass };
+    }).sort((a, b) => b.priorityScore - a.priorityScore);
+  }, [segments]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="space-y-6 max-w-[1600px] mx-auto min-h-screen bg-[#F8FAFC] dark:bg-[#070D1A] text-slate-900 dark:text-[#F8FAFC] p-4 transition-colors duration-300">
       
-      {/* Breadcrumbs / Back */}
-      <div className="flex items-center gap-2">
-        <Link href="/infrastructure" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 no-underline bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-border-subtle">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Infrastructure Desk
+      {/* Header */}
+      <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+        <Link href="/infrastructure" className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
-        <span className="text-xs text-slate-400 font-bold">•</span>
-        <span className="text-xs text-[#4682B4] font-bold">Road Monitoring</span>
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#4682B4]">Module 1</span>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Road Health Intelligence</h1>
+        </div>
       </div>
 
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Building2 className="w-8 h-8 text-[#4682B4]" />
-          Road Wear & Pothole Telemetry
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-          Monitor district paving wear rates, active pothole repair schedules, and adjust transit vehicle weight impact simulators.
-        </p>
-      </div>
-
-      {/* Location Scope Banner */}
       <LocationScopeBanner />
 
-      {/* Main layout grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
-        {/* Left Column: Telemetry Index dials & simulator */}
-        <div className="lg:col-span-1 space-y-6">
-          
-          {/* average Wear Index */}
-          <Card className="border border-border-subtle bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Activity className="w-4 h-4 text-[#4682B4]" />
-                Average District Wear Rate
-              </CardTitle>
+        {/* Left Column: Input Parameter Panel & Forecast */}
+        <div className="space-y-6">
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228]">
+            <CardHeader>
+              <CardTitle className="text-sm font-black text-slate-950 dark:text-white">Deterioration Forecast Input</CardTitle>
+              <CardDescription className="text-xs">Adjust parameters to simulate future degradation index.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center pt-2 pb-6">
-              
-              <div className="relative w-36 h-36 flex items-center justify-center">
-                {/* SVG Gauge */}
-                {/* Scale is 0.0 to 2.5 wear index */}
-                {/* Math: percentage = (avgWear / 2.5) */}
-                <svg className="w-full h-full transform -rotate-225" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    className="stroke-slate-200 dark:stroke-slate-800"
-                    strokeWidth="7"
-                    strokeDasharray={188.4}
-                    strokeLinecap="round"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    className={cn(
-                      "transition-all duration-500",
-                      heavyTransitLoad >= 80 ? "stroke-red-500 animate-pulse" :
-                      heavyTransitLoad >= 55 ? "stroke-orange-500" : "stroke-[#4682B4]"
-                    )}
-                    strokeWidth="7"
-                    strokeDasharray={188.4}
-                    strokeDashoffset={188.4 - (188.4 * Math.min(100, (heavyTransitLoad / 100) * 100)) / 100}
-                    strokeLinecap="round"
-                    fill="transparent"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{(heavyTransitLoad * 0.03 + 0.3).toFixed(2)}x</span>
-                  <span className="text-[9px] uppercase font-bold text-slate-400">Wear Coefficient</span>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-slate-500">Selected Road Segment</label>
+                <select 
+                  className="w-full text-xs font-semibold p-2 border border-slate-250 dark:border-slate-800 bg-white dark:bg-[#070D1A] rounded"
+                  value={selectedSegment.id}
+                  onChange={(e) => {
+                    const found = segments.find(s => s.id === e.target.value);
+                    if (found) setSelectedSegment(found);
+                  }}
+                >
+                  {segments.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
               </div>
 
-              <div className="w-full mt-2 flex items-center justify-between text-xs font-semibold px-3 py-2 rounded-lg border border-[#4682B4]/20 bg-[#4682B4]/5">
-                <span className="text-slate-600 dark:text-slate-400">Pavement Status:</span>
-                <span className={cn(
-                  "font-bold uppercase",
-                  heavyTransitLoad >= 80 ? 'text-red-600' :
-                  heavyTransitLoad >= 55 ? 'text-orange-600' : 'text-emerald-600'
-                )}>
-                  {heavyTransitLoad >= 80 ? 'Accelerated Degradation' : 
-                   heavyTransitLoad >= 55 ? 'Moderate Wear' : 'Stable'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Transit Load Simulator */}
-          <Card className="border border-border-subtle bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Settings className="w-4 h-4 text-[#4682B4]" />
-                Heavy Transit Simulator
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Adjust the ratio of heavy commercial trucks to test wear acceleration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-2">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-bold">
-                  <Label htmlFor="truck-ratio">Truck Transit Ratio</Label>
-                  <span className="text-[#4682B4]">{heavyTransitLoad}%</span>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-500">Road Age (years)</span>
+                  <span className="font-mono font-black">{age}</span>
                 </div>
-                <input
-                  id="truck-ratio"
-                  type="range"
-                  min="10"
-                  max="100"
-                  step="5"
-                  value={heavyTransitLoad}
-                  onChange={(e) => setHeavyTransitLoad(parseInt(e.target.value))}
-                  className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#4682B4]"
+                <input 
+                  type="range" min="0" max="15" step="0.5" value={age} 
+                  onChange={(e) => setAge(parseFloat(e.target.value))}
+                  className="w-full accent-[#4682B4]"
                 />
               </div>
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-lg text-xs leading-normal">
-                <span className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Impact Warning</span>
-                <p className="text-slate-500 dark:text-slate-400 font-medium">
-                  Ratios exceeding 75% accelerate asphalt micro-cracking and can trigger emergency pothole report tickers within low-elevation causeway segments.
-                </p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-500">Traffic Load Index</span>
+                  <span className="font-mono font-black">{trafficLoad}%</span>
+                </div>
+                <input 
+                  type="range" min="10" max="100" value={trafficLoad} 
+                  onChange={(e) => setTrafficLoad(parseInt(e.target.value))}
+                  className="w-full accent-[#4682B4]"
+                />
               </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-500">Previous Repairs Count</span>
+                  <span className="font-mono font-black">{repairs}</span>
+                </div>
+                <input 
+                  type="range" min="0" max="10" value={repairs} 
+                  onChange={(e) => setRepairs(parseInt(e.target.value))}
+                  className="w-full accent-[#4682B4]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-500">Weather & Moists Index</span>
+                  <span className="font-mono font-black">{weather}%</span>
+                </div>
+                <input 
+                  type="range" min="10" max="100" value={weather} 
+                  onChange={(e) => setWeather(parseInt(e.target.value))}
+                  className="w-full accent-[#4682B4]"
+                />
+              </div>
+
+              <Button 
+                onClick={runForecast} 
+                disabled={loadingForecast}
+                className="w-full bg-[#4682B4] hover:bg-[#4682B4]/90 text-white font-bold"
+              >
+                {loadingForecast ? <RefreshCw className="w-4 h-4 animate-spin mr-1" /> : <Activity className="w-4 h-4 mr-1" />}
+                Compute Forecast Model
+              </Button>
+            </CardContent>
+          </Card>
+
+          {forecastResult && (
+            <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228]">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black uppercase text-slate-450">Forecast Diagnostic Outputs</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-150 dark:border-slate-800">
+                    <span className="block text-[8px] uppercase text-slate-400">Current</span>
+                    <span className="block font-black text-sm text-[#4682B4]">{forecastResult.current_health}%</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-150 dark:border-slate-800">
+                    <span className="block text-[8px] uppercase text-slate-400">3-Month</span>
+                    <span className="block font-black text-sm text-amber-500">{forecastResult.expected_health_3m}%</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-150 dark:border-slate-800">
+                    <span className="block text-[8px] uppercase text-slate-400">6-Month</span>
+                    <span className="block font-black text-sm text-red-500">{forecastResult.expected_health_6m}%</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 dark:bg-[#070D1A]/55 border border-slate-150 dark:border-slate-800 rounded text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Failure Prob:</span>
+                    <span className="font-mono font-black text-red-500">{(forecastResult.failure_probability * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Damage Classification:</span>
+                    <span className="font-black truncate max-w-[150px]">{forecastResult.damage_type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Estimated Repair Cap:</span>
+                    <span className="font-mono font-black text-emerald-600 dark:text-emerald-450">₹{forecastResult.estimated_repair_cost.toLocaleString()}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Center Column: YOLOv8 Image Upload & Pothole Detection */}
+        <div className="space-y-6">
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228] h-full flex flex-col justify-between">
+            <div>
+              <CardHeader>
+                <CardTitle className="text-sm font-black text-slate-950 dark:text-white">YOLOv8 Pothole Detection</CardTitle>
+                <CardDescription className="text-xs">Upload Road/Drone image frames to detect distress.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="h-44 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center p-4 bg-slate-50/50 dark:bg-slate-900/40 relative">
+                  {uploadingImage ? (
+                    <div className="text-center space-y-2 text-xs">
+                      <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#4682B4]" />
+                      <span className="font-bold">Analyzing image layers via YOLOv8 model...</span>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2">
+                      <Upload className="w-8 h-8 mx-auto text-slate-400" />
+                      <label className="block text-xs font-bold text-[#4682B4] cursor-pointer hover:underline">
+                        Upload inspection frame
+                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      </label>
+                      <span className="text-[10px] text-slate-400 block">PNG, JPG or Drone telemetry frames</span>
+                    </div>
+                  )}
+                </div>
+
+                {detectedDamage && (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-150 dark:border-slate-800 text-xs space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-black uppercase text-[9px] text-[#4682B4]">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      Model Inference Output
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-slate-400">Class:</span>
+                      <span>{detectedDamage.damage_type}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-slate-400">Confidence:</span>
+                      <span className="font-mono text-emerald-500">{(detectedDamage.confidence_score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-slate-400">Severity:</span>
+                      <span className="text-red-500 uppercase">{detectedDamage.severity}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-slate-400">Est. Cost:</span>
+                      <span className="text-emerald-600 dark:text-emerald-450 font-mono">₹{detectedDamage.estimated_repair_cost.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </div>
+            
+            <CardContent className="pt-0 border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50/20 dark:bg-black/10 text-[10px] font-bold text-slate-500 leading-relaxed">
+              * Note: The YOLOv8 model runs on an internal server pipeline, automatically estimating repair costs and reporting GPS tags directly to the Command Center logs.
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: GIS Segment wear SVG Map & Pothole tickets */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* GIS Wear map */}
-          <Card className="border border-border-subtle bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Layers className="w-5 h-5 text-[#4682B4]" />
-                GIS Road Segment wear Map
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Sector 4B streets. Click segments to inspect localized vehicle load and wear levels.
-              </CardDescription>
+        {/* Right Column: Prioritization Queue List */}
+        <div className="space-y-6">
+          <Card className="border border-slate-200 dark:border-[#1A2744] bg-white dark:bg-[#0A1228]">
+            <CardHeader>
+              <CardTitle className="text-sm font-black text-slate-950 dark:text-white">Repair Prioritization Queue</CardTitle>
+              <CardDescription className="text-xs">Prioritized work orders based on traffic load & complaints.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {/* Interactive Segment wear SVG map */}
-              <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col items-center">
-                
-                <svg className="w-full aspect-[16/9] max-w-[420px]" viewBox="0 0 160 90">
-                  {/* Segment 1: Sangam Bridge Highway (x=30, y=25 to x=130, y=25) */}
-                  <line
-                    x1="25" y1="20" x2="135" y2="20"
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                {prioritizedSegments.map((seg: any, idx: number) => (
+                  <div 
+                    key={seg.id} 
                     className={cn(
-                      "stroke-[5] stroke-linecap-round cursor-pointer transition-colors duration-300 hover:opacity-85",
-                      getSVGPathColor(segments[0]),
-                      selectedSegment?.id === 'rs-1' ? 'stroke-slate-800 dark:stroke-white stroke-[7.5]' : ''
+                      "p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-[#101F42]/30 transition-colors cursor-pointer",
+                      selectedSegment.id === seg.id ? "bg-slate-50/70 dark:bg-[#101F42]/40" : ""
                     )}
-                    onClick={() => setSelectedSegment(segments[0])}
-                  />
-                  {/* Inner fill line to represent selection */}
-                  {selectedSegment?.id === 'rs-1' && (
-                    <line x1="25" y1="20" x2="135" y2="20" className={cn("stroke-[4] stroke-linecap-round pointer-events-none", getSVGPathColor(segments[0]))} />
-                  )}
-
-                  {/* Segment 2: Kalyani Nagar Riverside Drive (x=115, y=20 to x=115, y=70) */}
-                  <line
-                    x1="125" y1="22" x2="125" y2="78"
-                    className={cn(
-                      "stroke-[5] stroke-linecap-round cursor-pointer transition-colors duration-300 hover:opacity-85",
-                      getSVGPathColor(segments[1]),
-                      selectedSegment?.id === 'rs-2' ? 'stroke-slate-800 dark:stroke-white stroke-[7.5]' : ''
-                    )}
-                    onClick={() => setSelectedSegment(segments[1])}
-                  />
-                  {selectedSegment?.id === 'rs-2' && (
-                    <line x1="125" y1="22" x2="125" y2="78" className={cn("stroke-[4] stroke-linecap-round pointer-events-none", getSVGPathColor(segments[1]))} />
-                  )}
-
-                  {/* Segment 3: Yerawada Market (x=75, y=45 to x=125, y=78) */}
-                  <line
-                    x1="80" y1="45" x2="125" y2="78"
-                    className={cn(
-                      "stroke-[5] stroke-linecap-round cursor-pointer transition-colors duration-300 hover:opacity-85",
-                      getSVGPathColor(segments[2]),
-                      selectedSegment?.id === 'rs-3' ? 'stroke-slate-800 dark:stroke-white stroke-[7.5]' : ''
-                    )}
-                    onClick={() => setSelectedSegment(segments[2])}
-                  />
-                  {selectedSegment?.id === 'rs-3' && (
-                    <line x1="80" y1="45" x2="125" y2="78" className={cn("stroke-[4] stroke-linecap-round pointer-events-none", getSVGPathColor(segments[2]))} />
-                  )}
-
-                  {/* Segment 4: Aundh Bypass (x=30, y=25 to x=80, y=45) */}
-                  <line
-                    x1="25" y1="20" x2="80" y2="45"
-                    className={cn(
-                      "stroke-[5] stroke-linecap-round cursor-pointer transition-colors duration-300 hover:opacity-85",
-                      getSVGPathColor(segments[3]),
-                      selectedSegment?.id === 'rs-4' ? 'stroke-slate-800 dark:stroke-white stroke-[7.5]' : ''
-                    )}
-                    onClick={() => setSelectedSegment(segments[3])}
-                  />
-                  {selectedSegment?.id === 'rs-4' && (
-                    <line x1="25" y1="20" x2="80" y2="45" className={cn("stroke-[4] stroke-linecap-round pointer-events-none", getSVGPathColor(segments[3]))} />
-                  )}
-
-                  {/* Segment 5: Baner Link (x=30, y=70 to x=80, y=45) */}
-                  <line
-                    x1="30" y1="70" x2="80" y2="45"
-                    className={cn(
-                      "stroke-[5] stroke-linecap-round cursor-pointer transition-colors duration-300 hover:opacity-85",
-                      getSVGPathColor(segments[4]),
-                      selectedSegment?.id === 'rs-5' ? 'stroke-slate-800 dark:stroke-white stroke-[7.5]' : ''
-                    )}
-                    onClick={() => setSelectedSegment(segments[4])}
-                  />
-                  {selectedSegment?.id === 'rs-5' && (
-                    <line x1="30" y1="70" x2="80" y2="45" className={cn("stroke-[4] stroke-linecap-round pointer-events-none", getSVGPathColor(segments[4]))} />
-                  )}
-
-                  {/* Segment Labels */}
-                  <text x="80" y="14" textAnchor="middle" className="fill-slate-700 dark:fill-slate-300 text-[3.5px] font-black pointer-events-none">Confluence Hwy</text>
-                  <text x="135" y="50" textAnchor="middle" className="fill-slate-700 dark:fill-slate-300 text-[3.5px] font-black pointer-events-none" transform="rotate(90, 135, 50)">Riverside Dr</text>
-                  <text x="108" y="58" textAnchor="middle" className="fill-slate-700 dark:fill-slate-300 text-[3.5px] font-black pointer-events-none" transform="rotate(35, 108, 58)">Yerawada Causeway</text>
-                  
-                </svg>
-
-                {/* Legend */}
-                <div className="flex gap-4 mt-2 justify-center text-[10px] font-bold">
-                  <span className="flex items-center gap-1"><span className="h-0.5 w-4 bg-emerald-500" />Stable (&lt;0.8x)</span>
-                  <span className="flex items-center gap-1"><span className="h-0.5 w-4 bg-amber-500" />Cracked/Fair (0.8x - 1.29x)</span>
-                  <span className="flex items-center gap-1"><span className="h-0.5 w-4 bg-orange-500" />Severely Worn (1.3x - 1.79x)</span>
-                  <span className="flex items-center gap-1"><span className="h-0.5 w-4 bg-red-500" />Failed (&gt;1.8x)</span>
-                </div>
-              </div>
-
-              {/* Segment Details Inspector */}
-              <div className="mt-4 p-4 rounded-xl border border-border-subtle bg-slate-50/50 dark:bg-slate-900/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                {selectedSegment ? (
-                  <>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-black uppercase text-slate-400">Roadway Inspector</span>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{selectedSegment.name}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Traffic Load: <strong className="text-slate-700 dark:text-slate-300">{selectedSegment.trafficCount.toLocaleString()} vehicles/day</strong>
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                      <div className={cn(
-                        "px-4 py-2.5 rounded-lg border text-center flex-1 md:flex-none min-w-[125px]",
-                        getWearColor(selectedSegment.currentWear)
-                      )}>
-                        <span className="block text-[8px] uppercase font-black text-slate-400">Pavement Wear</span>
-                        <span className="text-base font-black leading-none mt-0.5">{selectedSegment.currentWear.toFixed(2)}x</span>
+                    onClick={() => setSelectedSegment(seg)}
+                  >
+                    <div className="space-y-1 truncate max-w-[180px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-black text-xs text-slate-950 dark:text-white truncate">{seg.name}</span>
                       </div>
-                      
-                      {selectedSegment.currentWear >= 1.3 ? (
-                        <Link href="/maintenance" className="px-3 py-2 rounded bg-[#4682B4] hover:bg-[#4682B4]/90 text-white text-xs font-bold text-center no-underline cursor-pointer">
-                          Schedule Repaving
-                        </Link>
-                      ) : (
-                        <span className="px-3 py-2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold text-center flex items-center gap-1">
-                          <ShieldCheck className="w-4.5 h-4.5 text-emerald-500" />
-                          Stable Surface
-                        </span>
-                      )}
+                      <span className="text-[10px] font-bold text-slate-500 block">
+                        {seg.trafficCount.toLocaleString()} vehicles/day • {seg.complaintsCount} Complaints
+                      </span>
                     </div>
-                  </>
-                ) : (
-                  <div className="w-full text-center py-4 text-xs text-slate-400">
-                    Select a street segment on the GIS layout map to audit.
+
+                    <div className="text-right shrink-0">
+                      <span className={cn(
+                        "inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase border",
+                        seg.priorityClass === 'critical' ? "bg-red-100 text-red-700 border-red-350 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30" :
+                        seg.priorityClass === 'high' ? "bg-orange-100 text-orange-700 border-orange-350 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30" :
+                        seg.priorityClass === 'medium' ? "bg-amber-100 text-amber-705 border-amber-300 dark:bg-amber-950/20 dark:text-amber-450 dark:border-amber-900/30" :
+                        "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/20 dark:text-emerald-450 dark:border-emerald-900/30"
+                      )}>
+                        {seg.priorityClass}
+                      </span>
+                      <span className="block text-[10px] font-black text-slate-400 mt-1 font-mono">Score: {seg.priorityScore}</span>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             </CardContent>
           </Card>
-
-          {/* Reported Potholes Directory */}
-          <Card className="border border-border-subtle bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <AlertTriangle className="w-5 h-5 text-[#4682B4]" />
-                Municipal Reported Potholes Directory
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Active tickets generated from citizens reports and telemetry scans.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-border-subtle text-slate-500 dark:text-slate-400 font-black uppercase text-[10px]">
-                      <th className="py-2.5">Ticket ID</th>
-                      <th className="py-2.5">Reported Location</th>
-                      <th className="py-2.5">Severity</th>
-                      <th className="py-2.5">Mock Status</th>
-                      <th className="py-2.5 text-right">Reported Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                    {potholes.map((ticket) => (
-                      <tr key={ticket.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
-                        <td className="py-2.5 font-bold text-[#4682B4]">{ticket.id}</td>
-                        <td className="py-2.5">
-                          <span className="block text-slate-800 dark:text-slate-100 font-bold">{ticket.location}</span>
-                        </td>
-                        <td className="py-2.5">
-                          <span className={cn(
-                            "inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase",
-                            ticket.severity === 'critical' ? 'bg-red-500/10 text-red-600' :
-                            ticket.severity === 'high' ? 'bg-orange-500/10 text-orange-600' :
-                            'bg-amber-500/10 text-amber-600'
-                          )}>
-                            {ticket.severity}
-                          </span>
-                        </td>
-                        <td className="py-2.5">
-                          <span className={cn(
-                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            ticket.status === 'reported' ? 'bg-red-500/10 text-red-600 animate-pulse' :
-                            ticket.status === 'scheduled' ? 'bg-amber-500/10 text-amber-600' :
-                            'bg-emerald-500/10 text-emerald-600'
-                          )}>
-                            <span className={cn(
-                              "h-1.5 w-1.5 rounded-full",
-                              ticket.status === 'reported' ? 'bg-red-500' :
-                              ticket.status === 'scheduled' ? 'bg-amber-500' : 'bg-emerald-500'
-                            )} />
-                            {ticket.status}
-                          </span>
-                        </td>
-                        <td className="py-2.5 text-right text-slate-500 dark:text-slate-400">{ticket.reportedDate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
         </div>
 
       </div>

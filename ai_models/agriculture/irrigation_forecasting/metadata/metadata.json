@@ -1,0 +1,7 @@
+{
+  "model_name": "irrigation_forecasting_predictor",
+  "version": "1.0.0",
+  "framework": "scikit-learn",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["crop", "soil_moisture_percent", "evapotranspiration_mm", "days_since_last_water"]
+}

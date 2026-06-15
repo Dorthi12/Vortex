@@ -1,0 +1,58 @@
+{
+  "crops": {
+    "rice": {
+      "target_n": 90.0,
+      "target_p": 40.0,
+      "target_k": 40.0,
+      "organic_alternatives": [
+        "Farm Yard Manure (FYM) @ 5 tonnes/acre",
+        "Green manure (Sesbania) prior to transplanting"
+      ],
+      "schedule": [
+        "Apply 50% Nitrogen, 100% Phosphorus, and 50% Potassium as Basal dose at transplanting.",
+        "Apply 25% Nitrogen top-dressing at active tillering stage (3 weeks after transplanting).",
+        "Apply remaining 25% Nitrogen and 50% Potassium at panicle initiation stage (6 weeks after transplanting)."
+      ]
+    },
+    "wheat": {
+      "target_n": 120.0,
+      "target_p": 60.0,
+      "target_k": 40.0,
+      "organic_alternatives": [
+        "Compost @ 6 tonnes/acre",
+        "Biofertilizers (Azotobacter and PSB) seed treatment"
+      ],
+      "schedule": [
+        "Apply 50% Nitrogen, 100% Phosphorus, and 100% Potassium as Basal dose at sowing.",
+        "Apply 25% Nitrogen top-dressing at crown root initiation (CRI) stage (first irrigation).",
+        "Apply remaining 25% Nitrogen top-dressing at tillering/jointing stage (second irrigation)."
+      ]
+    },
+    "maize": {
+      "target_n": 120.0,
+      "target_p": 60.0,
+      "target_k": 50.0,
+      "organic_alternatives": [
+        "Vermicompost @ 3 tonnes/acre",
+        "Neem cake @ 100 kg/acre to reduce pest attack and nitrification rate"
+      ],
+      "schedule": [
+        "Apply 33% Nitrogen, 100% Phosphorus, and 100% Potassium as Basal dose.",
+        "Apply 33% Nitrogen top-dressing at knee-high stage (4 weeks after sowing).",
+        "Apply remaining 34% Nitrogen top-dressing at tasseling/silking stage."
+      ]
+    },
+    "default": {
+      "target_n": 80.0,
+      "target_p": 40.0,
+      "target_k": 40.0,
+      "organic_alternatives": [
+        "General organic compost @ 4-5 tonnes/acre"
+      ],
+      "schedule": [
+        "Apply 50% Nitrogen, 100% Phosphorus, and 100% Potassium as Basal application.",
+        "Apply remaining 50% Nitrogen as top-dressing at active vegetative growth stage."
+      ]
+    }
+  }
+}

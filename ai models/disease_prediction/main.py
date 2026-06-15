@@ -39,6 +39,9 @@ from services.kafka_pipeline import pipeline
 from services.data_services import data_service
 from config.settings import settings, DISTRICTS_UP
 
+from health.routers.health_router import router as health_router
+from health.models.database import init_db as init_health_db
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Disease Intelligence System v%s", settings.app_version)
+
+    # Initialize health governance database tables
+    try:
+        init_health_db()
+        logger.info("✅ Health governance database initialized")
+    except Exception as e:
+        logger.warning(f"Failed to initialize health governance database: {e}")
+
+    try:
+        from health.consumers.health_consumers import health_consumer
+        health_consumer.start()
+        logger.info("✅ [health] consumer started")
+    except Exception as e:
+        logger.warning(f"[health] consumer startup: {e}")
 
     # Load and train model on startup
     if not symptom_classifier.load():
@@ -61,6 +78,12 @@ async def lifespan(app: FastAPI):
     logger.info("✅ All services initialised")
     yield
     logger.info("🛑 Shutting down…")
+    try:
+        from health.consumers.health_consumers import health_consumer
+        health_consumer.stop()
+        logger.info("🛑 [health] consumer stopped")
+    except Exception:
+        pass
     pipeline.stop_all()
 
 
@@ -83,6 +106,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(health_router)
 
 
 # ── REQUEST / RESPONSE MODELS ─────────────────────────────────

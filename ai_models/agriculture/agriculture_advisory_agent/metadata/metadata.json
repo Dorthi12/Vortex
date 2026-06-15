@@ -1,0 +1,7 @@
+{
+  "model_name": "agriculture_advisory_agent",
+  "version": "1.0.0",
+  "framework": "agent-planner-orchestration",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["district", "crop", "soil_ph", "nitrogen", "phosphorus", "potassium"]
+}

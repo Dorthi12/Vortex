@@ -1,0 +1,7 @@
+{
+  "model_name": "crop_recommendation_predictor",
+  "version": "1.0.0",
+  "framework": "scikit-learn",
+  "trained_at": "2026-06-11T00:00:00Z",
+  "features": ["nitrogen", "phosphorus", "potassium", "temperature", "humidity", "ph", "rainfall"]
+}
